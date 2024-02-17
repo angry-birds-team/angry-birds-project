@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import openpyxl
+import os
 
-interpreter = tf.lite.Interpreter(model_path="PATH TO MODEL")
+interpreter = tf.lite.Interpreter(model_path="sprint-two/custom_model_lite/detect.tflite")
+#interpreter = tf.lite.Interpreter(model_path="C:/Users/kotaf/Desktop/Spring 2024 Schoolwork/Capstone/github/angry-birds-project/sprint-two/custom_model_lite")
 interpreter.allocate_tensors()
 
 input_details = interpreter.get_input_details()
@@ -14,10 +16,10 @@ def preprocess_frame(frame):
     resized_frame = cv2.resize(frame, (input_shape[1], input_shape[2]))
     normalized_frame = resized_frame / 255.0  
     return np.expand_dims(normalized_frame, axis=0)
-
-cap = cv2.VideoCapture('PATH TO VIDEO')
+cap = cv2.VideoCapture('sprint-two/test_video.mp4')
 
 fps = int(cap.get(cv2.CAP_PROP_FPS))
+
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
