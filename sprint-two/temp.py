@@ -5,7 +5,6 @@ import openpyxl
 import os
 
 interpreter = tf.lite.Interpreter(model_path="sprint-two/custom_model_lite/detect.tflite")
-#interpreter = tf.lite.Interpreter(model_path="C:/Users/kotaf/Desktop/Spring 2024 Schoolwork/Capstone/github/angry-birds-project/sprint-two/custom_model_lite")
 interpreter.allocate_tensors()
 
 input_details = interpreter.get_input_details()
