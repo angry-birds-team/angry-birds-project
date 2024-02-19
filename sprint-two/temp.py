@@ -2,9 +2,20 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import openpyxl
+import json
+
+# load configuration settings
+f = open('sprint-two/config.json')
+settings = json.load(f)
+input_model_path = settings["input_model_path"]
+input_video_path = settings["input_video_path"]
+output_video_path = settings["output_video_path"]
+output_timestamps_path = settings["output_timestamps_path"]
+f.close()
+
 
 # create interpreter and load with pre-trained model 
-interpreter = tf.lite.Interpreter(model_path="sprint-two/custom_model_lite/detect.tflite")
+interpreter = tf.lite.Interpreter(model_path=input_model_path)
 interpreter.allocate_tensors()
 
 
@@ -18,7 +29,7 @@ def preprocess_frame(frame):    # function for processing frames from capture
     return np.expand_dims(normalized_frame, axis=0)
 
 # start capture from video file
-cap = cv2.VideoCapture('sprint-two/test_video.mp4')
+cap = cv2.VideoCapture(input_video_path)
 
 # get fps, dimensions, total frames from video capture
 fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -27,7 +38,7 @@ height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 # output capture to video file
-out = cv2.VideoWriter('output_video.avi', cv2.VideoWriter_fourcc(*'XVID'), fps, (width, height))
+out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), fps, (width, height))
 
 # open workbook for collecting timestamps to later output to excel file
 wb = openpyxl.Workbook()
@@ -86,7 +97,7 @@ while cap.isOpened():   # everything in this loop is being done as long as the c
     frame_number += 1
 
 # save completed workbook to output excel file
-wb.save('detection_results.xlsx')
+wb.save(output_timestamps_path)
 
 # close everything
 cap.release()
