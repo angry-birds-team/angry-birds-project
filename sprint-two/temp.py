@@ -90,7 +90,8 @@ while cap.isOpened():   # everything in this loop is being done as long as the c
 
     # show altered frames as video on screen 
     cv2.imshow('Frame', frame)
-    
+
+    # if q key is pressed, end early
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     
