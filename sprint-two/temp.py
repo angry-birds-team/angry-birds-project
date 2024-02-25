@@ -63,7 +63,7 @@ def thresholding(checked_frame, confidence_start):    # function for thresholdin
                 timestamp_end = f"{minutes_end:02}:{seconds_end:02}"
                 sheet.append([timestamp_start, timestamp_end])
                 confidence_start = None
-        return checked_frame
+        return checked_frame, confidence_start
 
 
 # start capture from video file
@@ -103,7 +103,7 @@ while cap.isOpened():   # everything in this loop is being done as long as the c
         checked_frame = check_frame(processed_frame)
         # send checked frame to thresholding to see if confidence is high enough
         # if so, handle confidence stamp and timestamp
-        final_frame = thresholding(checked_frame, confidence_start)
+        final_frame, confidence_start = thresholding(checked_frame, confidence_start)
         # write the altered frame to the output video file.
         out.write(final_frame)
 
