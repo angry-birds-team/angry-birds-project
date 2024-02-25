@@ -16,11 +16,8 @@ input_video_path = settings["input_video_path"]
 output_video_path = settings["output_video_path"]
 output_timestamps_path = settings["output_timestamps_path"]
 frame_divisor = int(settings["frame_divisor"]) # Only frames with a frame number divisible by this number will be processed (1 for all frames, this is for optimization) 
-confidence_threshold = float(settings["confidence_threshold"])
+confidence_threshold = float(settings["confidence_threshold"]) # confidence threshold should be between 0 and 1
 f.close()
-
-print(confidence_threshold)
-
 
 # create interpreter and load with pre-trained model 
 interpreter = tf.lite.Interpreter(model_path=input_model_path)
@@ -36,9 +33,9 @@ def preprocess_frame(frame):    # function for processing frames from capture
     normalized_frame = resized_frame / 255.0  
     return np.expand_dims(normalized_frame, axis=0)
 
-def check_frame(processed_frame):   # function for sending frame to interpreter to be checked for bird
-        processed_frame = np.float32(processed_frame)
-        interpreter.set_tensor(input_details[0]['index'], processed_frame)
+def check_frame(input_frame):   # function for sending frame to interpreter to be checked for bird
+        input_frame = np.float32(input_frame)
+        interpreter.set_tensor(input_details[0]['index'], input_frame)
         interpreter.invoke()
         return interpreter.get_tensor(output_details[0]['index'])
 
@@ -49,7 +46,7 @@ def thresholding(checked_frame, confidence_start):    # function for thresholdin
             text = f"Object: {confidence_percentage}%"
             cv2.rectangle(checked_frame, (50, 50), (150, 150), (0, 255, 0), 2)
             cv2.putText(checked_frame, text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        if  confidence_threshold <= checked_frame[0][0]: # if we're above 50% confidence, start a timestamp if one hasn't been started
+        if confidence_threshold <= checked_frame[0][0]: # if we're above confidence threshold, start a timestamp if one hasn't been started
             if confidence_start is None:
                 confidence_start = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
         else: # if we're below 50% confidence, if we're in a timestamp, go ahead and add the timestamp to the worksheet and end it 
@@ -96,11 +93,12 @@ while cap.isOpened():   # everything in this loop is being done as long as the c
     # only check every fifth frame to increase speed
     
     # process frame with preprocess_frame
-    processed_frame = preprocess_frame(frame)
+    # do not try and write this variable to a file, it's not compatible
+    processed = preprocess_frame(frame)
 
     if frame_number % frame_divisor == 0:
         # send processed frame to interpreter be checked for bird
-        checked_frame = check_frame(processed_frame)
+        checked_frame = check_frame(frame)
         # send checked frame to thresholding to see if confidence is high enough
         # if so, handle confidence stamp and timestamp
         final_frame, confidence_start = thresholding(checked_frame, confidence_start)
