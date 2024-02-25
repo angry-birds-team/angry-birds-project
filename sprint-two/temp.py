@@ -3,6 +3,10 @@ import numpy as np
 import tensorflow as tf
 import openpyxl
 import json
+import time
+
+# start time tracking (for tracking performance)
+start = time.time()
 
 # load configuration settings
 f = open('sprint-two/config.json')
@@ -104,3 +108,8 @@ wb.save(output_timestamps_path)
 cap.release()
 out.release()
 cv2.destroyAllWindows()
+
+# get execution time for entire program (for tracking performance)
+end = time.time()
+print(f"Program took: {(end-start)} seconds.")
+print(f"Program took: {(end-start)*1000} milliseconds.")
