@@ -62,67 +62,67 @@ def thresholding(checked_frame, confidence_start, frame):    # function for thre
                 confidence_start = None
         return frame, confidence_start
 
+if __name__ == '__main__':
+    # start capture from video file
+    cap = cv2.VideoCapture(input_video_path)
 
-# start capture from video file
-cap = cv2.VideoCapture(input_video_path)
+    # get fps, dimensions, total frames from video capture
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-# get fps, dimensions, total frames from video capture
-fps = int(cap.get(cv2.CAP_PROP_FPS))
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # output capture to video file
+    out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), fps, (width, height))
 
-# output capture to video file
-out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), fps, (width, height))
+    # open workbook for collecting timestamps to later output to excel file
+    wb = openpyxl.Workbook()
+    sheet = wb.active
+    sheet.append(["Start Time (min:sec)", "End Time (min:sec)"])
 
-# open workbook for collecting timestamps to later output to excel file
-wb = openpyxl.Workbook()
-sheet = wb.active
-sheet.append(["Start Time (min:sec)", "End Time (min:sec)"])
+    # initialize and set frame count and confidence to initial values
+    frame_number = 0
+    confidence_start = None
 
-# initialize and set frame count and confidence to initial values
-frame_number = 0
-confidence_start = None
+    while cap.isOpened():   # everything in this loop is being done as long as the capture is open.
+        # get the return value and frame image data from cap
+        ret, frame = cap.read()
+        # if ret is false, no frame was grabbed, break
+        if not ret:
+            break
 
-while cap.isOpened():   # everything in this loop is being done as long as the capture is open.
-    # get the return value and frame image data from cap
-    ret, frame = cap.read()
-    # if ret is false, no frame was grabbed, break
-    if not ret:
-        break
-    # only check every fifth frame to increase speed
-    
-    # process frame with preprocess_frame
-    # do not try and write this variable to a file, it's not compatible
-    processed = preprocess_frame(frame)
+        
+        # process frame with preprocess_frame
+        # do not try and write this variable to a file, it's not compatible
+        processed = preprocess_frame(frame)
 
-    if frame_number % frame_divisor == 0:
-        # send processed frame to interpreter be checked for bird
-        checked = check_frame(processed)
-        # send checked frame to thresholding to see if confidence is high enough
-        # if so, handle confidence stamp and timestamp
-        final_frame, confidence_start = thresholding(checked, confidence_start, frame)
-        # write the altered frame to the output video file.
-        out.write(final_frame)
+        if frame_number % frame_divisor == 0: # only check every frame divisible by preset number to save time
+            # send processed frame to interpreter be checked for bird
+            checked = check_frame(processed)
+            # send checked frame to thresholding to see if confidence is high enough
+            # if so, handle confidence stamp and timestamp
+            final_frame, confidence_start = thresholding(checked, confidence_start, frame)
+            # write the altered frame to the output video file.
+            out.write(final_frame)
 
-    # show altered frames as video on screen 
-    # cv2.imshow('Frame', frame)
+        # show altered frames as video on screen 
+        # cv2.imshow('Frame', frame)
 
-    # if q key is pressed, end early
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-    
-    frame_number += 1
+        # if q key is pressed, end early
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        
+        frame_number += 1
 
-# save completed workbook to output excel file
-wb.save(output_timestamps_path)
+    # save completed workbook to output excel file
+    wb.save(output_timestamps_path)
 
-# close everything
-cap.release()
-out.release()
-cv2.destroyAllWindows()
+    # close everything
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
 
-# get execution time for entire program (for tracking performance)
-end = time.time()
-print(f"Program took: {(end-start)} seconds.")
-print(f"Program took: {(end-start)*1000} milliseconds.")
+    # get execution time for entire program (for tracking performance)
+    end = time.time()
+    print(f"Program took: {(end-start)} seconds.")
+    print(f"Program took: {(end-start)*1000} milliseconds.")
