@@ -1,0 +1,7 @@
+Formal Feedback for me:
+
+For my formal feedback, Md Nahidul Islam and William Grant Harper did a code review and they discussed with me how to increase the computational effiency of my code. Islam suggested that I attempt to scale the number of frames skipped to the quality of the video. Islam and Harper recommended I look into Window Sliding Techniques to increase efficiency. 
+
+Formal Feedback by me:
+
+I reviewed some of the work Harper has been doing with his Earthquake VR Project with Md Nahidul Islam also reviewing. Harper has been using paraview to make the program, but they are migrating to unity. As someone with experience with Unity, I suggested he research more about C# and suggested he make each elevation point an object in Unity. I also suggested he write a script to map the color of each point to its elevation to create color scale and attach it to the elevation point objects.
