@@ -1,4 +1,4 @@
-import cv2
+bimport cv2
 import numpy as np
 import tensorflow as tf
 import openpyxl
@@ -9,7 +9,7 @@ import time
 start = time.time()
 
 # load configuration settings
-f = open('sprint-three/config.json')
+f = open('sprint-three/codebase/config.json')
 settings = json.load(f)
 input_model_path = settings["input_model_path"]
 input_video_path = settings["input_video_path"]
