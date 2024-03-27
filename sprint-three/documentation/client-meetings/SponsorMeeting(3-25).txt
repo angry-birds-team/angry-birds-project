@@ -1,3 +1,5 @@
+(Meeting between Dakota Flowers & Rin Pell)
+
 Summarize what we've done this week.
 
 Informed Rin that we had created a server for our daya and had trained a preliminary model for the wrens which we would be testing soon. Informed her we would be starting on a GUI soon. 
