@@ -7,6 +7,7 @@ import tensorflow as tf
 import openpyxl
 import json
 import time
+from tkinter import Tk, filedialog
 
 # start time tracking (for tracking performance)
 start = time.time()
@@ -64,6 +65,10 @@ def thresholding(checked_frame, confidence_start, frame):    # function for thre
                 sheet.append([timestamp_start, timestamp_end])
                 confidence_start = None
         return frame, confidence_start
+root = Tk()
+root.withdraw()  # Hide the main window
+input_video_path = filedialog.askopenfilename(title="Select Video File", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
+root.destroy()  # Destroy the root window after selection
 
 if __name__ == '__main__':
     # start capture from video file
@@ -74,6 +79,7 @@ if __name__ == '__main__':
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
 
     # output capture to video file
     out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), fps, (width, height))
@@ -93,8 +99,8 @@ if __name__ == '__main__':
         # if ret is false, no frame was grabbed, break
         if not ret:
             break
-
         
+        # resize the frame
         # process frame with preprocess_frame
         # do not try and write this variable to a file, it's not compatible
         processed = preprocess_frame(frame)
