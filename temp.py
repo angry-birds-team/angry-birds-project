@@ -5,7 +5,7 @@ import tensorflow as tf
 import openpyxl
 import time
 
-interpreter = tf.lite.Interpreter(model_path="C:/Users/Third/Downloads/custom_model_lite2/custom_model_lite/detect.tflite")
+interpreter = tf.lite.Interpreter(model_path="model file location")
 interpreter.allocate_tensors()
 
 input_details = interpreter.get_input_details()
