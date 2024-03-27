@@ -1,8 +1,8 @@
 {
-	"input_video_path": "sprint-three/input/test_video.mp4",
-	"input_model_path": "sprint-three/custom_model_lite/detect.tflite",
+	"input_video_path": "sprint-three/input/0409Pt2.MP4",
+	"input_model_path": "sprint-three/models/wren/wren_1/detect.tflite",
 	"output_video_path": "sprint-three/output/video/output_video.avi",
 	"output_timestamps_path": "sprint-three/output/timestamps/detection_results.xlsx",
-	"frame_divisor": "24",
+	"frame_divisor": "60",
 	"confidence_threshold": ".5"
 }

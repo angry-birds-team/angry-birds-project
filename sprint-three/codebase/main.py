@@ -1,4 +1,7 @@
-bimport cv2
+import os
+os.environ['OPENCV_FFMPEG_READ_ATTEMPTS'] = "2147483647"
+print(os.environ['OPENCV_FFMPEG_READ_ATTEMPTS'])
+import cv2
 import numpy as np
 import tensorflow as tf
 import openpyxl
@@ -106,7 +109,7 @@ if __name__ == '__main__':
             out.write(final_frame)
 
         # show altered frames as video on screen 
-        # cv2.imshow('Frame', frame)
+        cv2.imshow('Frame', frame)
 
         # if q key is pressed, end early
         if cv2.waitKey(1) & 0xFF == ord('q'):
