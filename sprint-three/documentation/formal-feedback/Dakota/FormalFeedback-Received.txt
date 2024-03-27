@@ -9,8 +9,3 @@ I spoke with her about the process we had been using to train our new model. (Tr
 I noted that we didn't have as many training images as we liked, especially as far as variety goes. She advised that homogeneity will probably not be a problem given the data set we are expected to handle.
 
 I informed her that we had not yet started on a GUI, and She recommended we get start on one as quickly as possible.
-
-
-Feedback Given:
-
-I was not able to find someone who needed feedback. I spoke with Prof. Cook and she informed me that this was alright.
