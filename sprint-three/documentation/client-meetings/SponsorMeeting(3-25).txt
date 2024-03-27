@@ -1,0 +1,39 @@
+Summarize what we've done this week.
+
+Informed Rin that we had created a server for our daya and had trained a preliminary model for the wrens which we would be testing soon. Informed her we would be starting on a GUI soon. 
+
+Ask if she has any questions.
+
+Rin asked about how we had trained the model and how our program worked. She asked if the program could be run on multiple computers at a time. (Told her yes.) She asked if multiple files could be fed into the machine in sequence. (Told her this logic was not implemented, but that I would add it to our features list.) She asked if we could maintain a list of the resources we used. (I said I would get such a list started.)
+
+Questions for Rin:
+
+Were you wanting our software to detect baby birds?
+
+No, that is not necessary currently. 
+
+Will the software ever need to detect wrens and warblers in the same footage?
+
+No.
+
+What level of speed are you expecting?
+
+She would prefer if it took less time, but it should be alright if it can run in the background.
+
+Do you need an output video or just the excel file? 
+
+The excel is mostly what is necessary, but she would like a video interface if possible.
+
+How long should the gap be before we start a new trip? 
+
+She would prefer to have duplicates than to miss trips, so do not add logic for ignoring gaps.
+
+Arrange next meeting.
+
+Next Meeting April 5 at 1pm. 
+
+Notes:
+
+Videos are taken on brood day 4 or 7.
+
+Cowbirds may appear as nest parasites.
