@@ -7,9 +7,10 @@ import tensorflow as tf
 import openpyxl
 import json
 import time
+from tkinter import Tk, filedialog, Button, Label, Entry
 
 # start time tracking (for tracking performance)
-start = time.time()
+start_time = time.time()
 
 # load configuration settings
 f = open('sprint-three/codebase/config.json')
@@ -30,6 +31,23 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details() # list of dictionaries, each dictionary has details about an input tensor
 output_details = interpreter.get_output_details() # list of dictionaries, each dictionary has details about an input tensor
 input_shape = input_details[0]['shape'] # array of shape of input tensor
+
+# Create a GUI window
+root = Tk()
+root.title("Video Processing")
+root.geometry("300x150")
+root.attributes('-topmost', True)  # Keep the window always on top
+
+# Create a label for the finish time
+finish_label = Label(root, text="Estimated Finish Time: --:--")
+finish_label.pack(pady=5)
+
+# Create a label and entry for frame skip interval
+frame_skip_label = Label(root, text="Frame Skip Interval:")
+frame_skip_label.pack(pady=5)
+frame_skip_entry = Entry(root)
+frame_skip_entry.pack(pady=5)
+frame_skip_entry.insert(0, str(frame_divisor))  # Default value
 
 def preprocess_frame(frame):    # function for processing frames from capture
     resized_frame = cv2.resize(frame, (input_shape[1], input_shape[2]))
@@ -64,6 +82,10 @@ def thresholding(checked_frame, confidence_start, frame):    # function for thre
                 sheet.append([timestamp_start, timestamp_end])
                 confidence_start = None
         return frame, confidence_start
+root = Tk()
+root.withdraw()  # Hide the main window
+input_video_path = filedialog.askopenfilename(title="Select Video File", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
+root.destroy()  # Destroy the root window after selection
 
 if __name__ == '__main__':
     # start capture from video file
@@ -74,6 +96,7 @@ if __name__ == '__main__':
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
 
     # output capture to video file
     out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), fps, (width, height))
@@ -93,8 +116,8 @@ if __name__ == '__main__':
         # if ret is false, no frame was grabbed, break
         if not ret:
             break
-
         
+        # resize the frame
         # process frame with preprocess_frame
         # do not try and write this variable to a file, it's not compatible
         processed = preprocess_frame(frame)
@@ -116,6 +139,17 @@ if __name__ == '__main__':
             break
         
         frame_number += 1
+    	# Calculate and update the estimated finish time every second
+        if frame_number % fps == 0:
+            elapsed_time = time.time() - start_time
+            avg_time_per_frame = elapsed_time / frame_number
+            frames_remaining = total_frames - frame_number
+            estimated_time_remaining = avg_time_per_frame * frames_remaining
+            eta_minutes = int(estimated_time_remaining // 60)
+            eta_seconds = int(estimated_time_remaining % 60)
+            eta_text = f"{eta_minutes:02}:{eta_seconds:02}"
+            finish_label.config(text=f"Estimated Finish Time: {eta_text}")
+            root.update()  # Force update of the GUI
 
     # save completed workbook to output excel file
     wb.save(output_timestamps_path)
@@ -126,6 +160,6 @@ if __name__ == '__main__':
     cv2.destroyAllWindows()
 
     # get execution time for entire program (for tracking performance)
-    end = time.time()
-    print(f"Program took: {(end-start)} seconds.")
-    print(f"Program took: {(end-start)*1000} milliseconds.")
+    end_time = time.time()
+    print(f"Program took: {(end_time-start_time)} seconds.")
+    print(f"Program took: {(end_time-start_time)*1000} milliseconds.")
