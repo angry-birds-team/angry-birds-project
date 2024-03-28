@@ -1,0 +1,5 @@
+Feedback from Tamia Boston: 
+The GUI looks good so far! 
+I enjoyed clicking around and testing the processing button and see how changing the frame speed affected the program. 
+If I had to point out anything, just don't forget to add some comments explaining the different features so that any future people reading the code doesn't get confused. 
+Besides that, looks like you're on track.
