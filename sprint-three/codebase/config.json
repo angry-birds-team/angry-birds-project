@@ -3,6 +3,6 @@
 	"input_model_path": "sprint-three/models/wren/wren_1/detect.tflite",
 	"output_video_path": "sprint-three/output/video/output_video.avi",
 	"output_timestamps_path": "sprint-three/output/timestamps/detection_results.xlsx",
-	"frame_divisor": "60",
+	"frame_divisor": "2",
 	"confidence_threshold": ".5"
 }
