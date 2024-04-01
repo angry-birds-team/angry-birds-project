@@ -1,0 +1,43 @@
+INTRO
+
+I've written this up just so everyone is on the same page about how to collection and label images to be trained for our model.
+
+1. SELECTING SOURCE VIDEOS
+
+To avoid duplicate images from being uploaded to our model, please note which files you use as source videos for training data. Please add these file names to the used-source-videos log file in our documentation folder. 
+
+[This log file has not been created yet.]
+
+2. SELECTING IMAGES
+
+For your selected bird species, find frames of the video where the bird appears and get an image file of that frame. You can extract the images programmatically using ffmpeg or you can take screenshots.
+
+If you need help extracting the frames programmatically, see this guide:
+
+https://www.bannerbear.com/blog/how-to-extract-images-from-a-video-using-ffmpeg/
+
+When you are selecting frames to label, try and get distinct shots if possible, but given the relative uniformity of our expected input data, this is not a huge concern.
+
+3. LABELLING IMAGES
+
+After you have selected your images, you need to label them so the model know where the bird is. Use the following software:
+
+https://github.com/HumanSignal/labelImg
+
+It is deprecated, but it will do for our purposes. 
+
+Open the directory where your images are stored and draw a box covering the bird in each of the images in the directory. Label the box "wren" exactly if you are labeling images for our wren model and "warbler" exactly if you are labelling them for our warbler model. A metadata file will be created for each image you label. Make sure you keep these files in the same folder.
+
+4. Uploading Images
+
+[PLACEHOLDER]
+
+5. Video Guide
+
+For more information, refer to the following Youtube videos.
+
+https://www.youtube.com/watch?v=XZ7FYAMCc4M
+
+https://www.youtube.com/watch?v=v0ssiOY6cfg&t=0s
+
+- Dakota Flowers
