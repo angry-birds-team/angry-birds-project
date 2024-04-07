@@ -7,14 +7,14 @@ import tensorflow as tf
 import openpyxl
 import json
 import time
-from tkinter import Tk, filedialog, Button, Label, Entry
+from tkinter import Tk, filedialog, Button, Label, Entry, Text, Scrollbar
 from tkinter import *
 from tkinter import ttk
 import tkinter as tk
 from PIL import Image, ImageTk
 
 # load configuration settings
-f = open('sprint-three/codebase/config.json')
+f = open('sprint-four/codebase/config.json')
 settings = json.load(f)
 input_model_path = settings["input_model_path"]
 input_video_path = settings["input_video_path"]
@@ -174,15 +174,27 @@ def read_capture():
     time_position = f"{minutes_raw:02}:{seconds_raw:02}"
     time_position_label.config(text=f"Timestamp: {time_position}")
 
-  
+    # Update the timestamp label under "Arrivals & Departures"
+    timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(2, sheet.max_row+1)])
+    arrivals_departures_text.delete(1.0, END)  # Clear the text widget
+    arrivals_departures_text.insert(END, timestamps)
+
     # Repeat the same process after every 10 seconds
     if playing:
         image_widget.after(1, read_capture) 
 
+def save_workbook():
+    try:
+        # Save the workbook with a predefined filename
+        wb.save("timestamps.xlsx")
+        print("Workbook saved successfully")
+    except Exception as e:
+        print(f"Failed to save workbook: {e}")
+
 if __name__ == "__main__":
     # Set up root window
     root = Tk()
-    root.geometry("1000x800+500+100")
+    root.geometry("1000x480+0+0")
     root.title("Roc")
 
     # Create images to be used later.
@@ -196,6 +208,10 @@ if __name__ == "__main__":
     # Set up left frame for video playback.
     left_frame = ttk.Frame(root, padding="3 3 12 12", width=500, height=800)
     left_frame.pack(side="left", anchor=NW, padx=25, pady=25)
+
+    # Add a separator between the left and right frames
+    separator = ttk.Separator(root, orient='vertical')
+    separator.pack(side='left', fill='y', padx=5, pady=5)
 
     # Set up right frame for data display
     right_frame = ttk.Frame(root, padding="3 3 12 12", width=500, height=800)
@@ -245,17 +261,26 @@ if __name__ == "__main__":
 
     #Top Section
     # time position referred to as timestamp in gui for user ease
-    time_position_label = ttk.Label(right_frame, text=f"Timestamp: {time_position}", font=("Terminal", 20)) # Logic for updating now implemented yet
+    time_position_label = ttk.Label(right_frame, text=f"Timestamp: {time_position}", font=("Terminal", 20)) # Logic for updating now implemented
     time_position_label.pack(side=TOP, anchor=NW)
-    current_frame_label = ttk.Label(right_frame, text=f"Current Frame: {frame_number}", font=("Terminal", 20)) # Logic for updating now implemented yet
+    current_frame_label = ttk.Label(right_frame, text=f"Current Frame: {frame_number}", font=("Terminal", 20)) # Logic for updating now implemented
     current_frame_label.pack(side=TOP, anchor=NW)
-    confidence_label = ttk.Label(right_frame, text=f"Confidence Level: {confidence_percentage}%", font=("Terminal", 20)) # Logic for updating now implemented yet
+    confidence_label = ttk.Label(right_frame, text=f"Confidence Level: {confidence_percentage}%", font=("Terminal", 20)) # Logic for updating now implemented
     confidence_label.pack(side=TOP, anchor=NW)
 
     #Bottom Section (Split into separate frames?) Note that the top of this section of info is 200 below the top of the right frame
-    arrival_departure_label = ttk.Label(right_frame, text="Arrivals & Departures", font=("Terminal", 20))
-    arrival_departure_label.pack(side=TOP, anchor=NW, pady=200)
-    arrival_departure_separator = ttk.Separator(right_frame, orient="horizontal")
-    arrival_departure_separator.pack(side=TOP)
+    arrivals_departures_label = ttk.Label(right_frame, text="Arrivals & Departures", font=("Terminal", 20), justify=LEFT)
+    arrivals_departures_label.pack(side=TOP, anchor=NW, pady=20)
+
+    # Scrollbar for arrival and departure
+    arrivals_departures_scrollbar = Scrollbar(right_frame, orient=VERTICAL)
+    arrivals_departures_scrollbar.pack(side=RIGHT, fill=Y)
+    arrivals_departures_text = Text(right_frame, yscrollcommand=arrivals_departures_scrollbar.set, wrap=WORD, height=10)
+    arrivals_departures_text.pack(side=TOP, anchor=NW, fill=BOTH, expand=True)
+    arrivals_departures_scrollbar.config(command=arrivals_departures_text.yview)
+
+    # Save the timestamps to the workbook
+    save_button = ttk.Button(right_frame, text="Save Workbook", command=save_workbook)
+    save_button.pack(side=TOP, anchor=NW, pady=10)
 
     root.mainloop()
