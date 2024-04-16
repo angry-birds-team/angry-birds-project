@@ -40,13 +40,17 @@ sheet.append(["Start Time (min:sec)", "End Time (min:sec)"])
 # Declare global variables
 
 # variable for whether or not the video is playback is paused. True for playing, False for Paused
-playing = True
+playing = False
 # variable for current frame being read. initialize when program is run and reset when a new video is loaded
 frame_number = 0
 cap = None
 confidence_percentage = 0
 timestamp_start = None
 time_position = ""
+
+delay_started = False
+delay_start_time = None
+delay_duration = 0  # delay duration in seconds
 
 def detect_bird(frame): #function for detecting the bird in a frame
     # do not try and write this variable to a file, it's not compatible
@@ -57,42 +61,62 @@ def detect_bird(frame): #function for detecting the bird in a frame
             # send checked frame to thresholding to see if confidence is high enough
             # if so, handle confidence stamp and timestamp
             thresholding(checked)
-def preprocess_frame(frame):    # function for processing frames from capture
+
+def preprocess_frame(frame):     # function for processing frames from capture
+    if frame is None or frame.size == 0:
+        return None
+    
     resized_frame = cv2.resize(frame, (input_shape[1], input_shape[2]))
     normalized_frame = resized_frame / 255.0  
     return np.expand_dims(normalized_frame, axis=0)
+
 
 def check_frame(processed):   # function for sending frame to interpreter to be checked for bird
         processed = np.float32(processed)
         interpreter.set_tensor(input_details[0]['index'], processed)
         interpreter.invoke()
         return interpreter.get_tensor(output_details[0]['index'])
+
 def thresholding(checked_frame):    # function for thresholding based on confidence of model
-        global confidence_percentage
-        global timestamp_start
+    global confidence_percentage
+    global timestamp_start
+    global delay_started
+    global delay_start_time
 
-        # get confidence from model
-        confidence = checked_frame[0][0]
-        confidence_percentage = int(checked_frame[0][0] * 100)
+    # get confidence from model
+    confidence = checked_frame[0][0]
+    confidence_percentage = int(checked_frame[0][0] * 100)
 
-        # update gui with new confidence percentage
-        confidence_label.config(text=f"Confidence Level: {confidence_percentage}%")
+    # update gui with new confidence percentage
+    confidence_label.config(text=f"Confidence Level: {confidence_percentage}%")
 
-        # logic for timestamps
-        if confidence > confidence_threshold: # check if confidence is above threshold, if it, start a timestamp if one hasn't been already  
-            if timestamp_start is None:
-                timestamp_start = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-        else: # if we're below 50% confidence, if we're in a timestamp, go ahead and add the timestamp to the worksheet and end it 
-            if timestamp_start is not None:
-                timestamp_end = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-                minutes_start = int(timestamp_start // 60)
-                seconds_start = int(timestamp_start % 60)
-                minutes_end = int(timestamp_end // 60)
-                seconds_end = int(timestamp_end % 60)
-                timestamp_start_string = f"{minutes_start:02}:{seconds_start:02}"
-                timestamp_end_string = f"{minutes_end:02}:{seconds_end:02}"
-                sheet.append([timestamp_start_string, timestamp_end_string])
-                timestamp_start = None
+    # logic for timestamps
+    if confidence > confidence_threshold: # check if confidence is above threshold, if it, start a timestamp if one hasn't been already  
+        if timestamp_start is None:
+            timestamp_start = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+        delay_started = False  # reset delay if confidence is back up
+    else: # if we're below confidence_threshold
+        if timestamp_start is not None:  # check if we had started a timestamp
+            if not delay_started:  # start delay if it hasn't started
+                delay_started = True
+                delay_start_time = time.time()
+            else:  # check if delay is over
+                current_time = time.time()
+                if current_time - delay_start_time >= delay_duration:
+                    timestamp_end = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+                    minutes_start = int(timestamp_start // 60)
+                    seconds_start = int(timestamp_start % 60)
+                    minutes_end = int(timestamp_end // 60)
+                    seconds_end = int(timestamp_end % 60)
+                    timestamp_start_string = f"{minutes_start:02}:{seconds_start:02}"
+                    timestamp_end_string = f"{minutes_end:02}:{seconds_end:02}"
+                    sheet.append([timestamp_start_string, timestamp_end_string])
+                    timestamp_start = None
+                    delay_started = False
+    #Testing delay
+    #if delay_started:
+        #print(f"Waiting for {delay_duration} seconds before recording timestamp...")
+
 def open_file():
     global input_video_path
     global cap
@@ -105,7 +129,7 @@ def open_file():
         open_file.destroy()  # Destroy the root window after selection"""
         cap = cv2.VideoCapture(input_video_path)
     else:
-        if cap.isOpened:
+        if cap.isOpened():
             cap.release()
         open_file = Tk()
         open_file.withdraw()  # Hide the main window
@@ -114,74 +138,83 @@ def open_file():
         cap = cv2.VideoCapture(input_video_path)
         # make sure to reset frame number when opening new file
         frame_number = 0
+
 def set_model():
     # Write function later. Function should open up file dialog and set model path, see open_file function
     pass
+
 def set_frame_skip_interval():
     # Write function later. Function should open up window to set frame skip interval
     pass
+
 def set_output_destination():
     # Write function later. Function should open up window to set output directory for video & spreadsheet
     pass
-def toggle_playback(playback_button):
+
+def toggle_playback():
     global playing
     global cap
+
     if cap is None:
         print("No video selected. Select a video first.")
     else:
         if playing:
-            playback_button.config(image=play_image)
             playing = False
+            playback_button.config(image=play_image)
         else:   
-            playback_button.config(image=pause_image)
             playing = True
+            playback_button.config(image=pause_image)
             read_capture()
+
 def read_capture():
-    global frame_number
+    global playing
+    global cap
 
-    # Capture the video frame by frame 
-    _, frame = cap.read() 
+    while playing:
+        if cap is not None and cap.isOpened():
+            # Capture the video frame by frame 
+            _, frame = cap.read() 
 
-    # Increment frame number, update current frame in gui
-    frame_number += 1
-    current_frame_label.config(text=f"Current Frame: {frame_number}")
+            # Increment frame number, update current frame in gui
+            global frame_number
+            frame_number += 1
+            current_frame_label.config(text=f"Current Frame: {frame_number}")
 
-    # Send frame to detect_bird function to check for bird
-    detect_bird(frame)
+            # Send frame to detect_bird function to check for bird
+            detect_bird(frame)
 
-    # Convert image from one color space to other 
-    opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA) 
-  
-    # Capture the latest frame and transform to image 
-    captured_image = Image.fromarray(opencv_image)
+            # Convert image from one color space to other 
+            opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA) 
 
-    # resize image
-    captured_image = captured_image.resize((480, 270)) 
+            # Capture the latest frame and transform to image 
+            captured_image = Image.fromarray(opencv_image)
 
-    # Convert captured image to photoimage 
-    photo_image = ImageTk.PhotoImage(image=captured_image) 
-  
-    # Displaying photoimage in the label 
-    image_widget.photo_image = photo_image 
-  
-    # Configure image in the label 
-    image_widget.configure(image=photo_image) 
+            # resize image
+            captured_image = captured_image.resize((480, 270)) 
 
-    # Update time position in gui
-    time_raw = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-    minutes_raw = int(time_raw // 60)
-    seconds_raw = int(time_raw % 60)
-    time_position = f"{minutes_raw:02}:{seconds_raw:02}"
-    time_position_label.config(text=f"Timestamp: {time_position}")
+            # Convert captured image to photoimage 
+            photo_image = ImageTk.PhotoImage(image=captured_image) 
 
-    # Update the timestamp label under "Arrivals & Departures"
-    timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(2, sheet.max_row+1)])
-    arrivals_departures_text.delete(1.0, END)  # Clear the text widget
-    arrivals_departures_text.insert(END, timestamps)
+            # Displaying photoimage in the label 
+            image_widget.photo_image = photo_image 
 
-    # Repeat the same process after every 10 seconds
-    if playing:
-        image_widget.after(1, read_capture) 
+            # Configure image in the label 
+            image_widget.configure(image=photo_image) 
+
+            # Update time position in gui
+            time_raw = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+            minutes_raw = int(time_raw // 60)
+            seconds_raw = int(time_raw % 60)
+            time_position = f"{minutes_raw:02}:{seconds_raw:02}"
+            time_position_label.config(text=f"Timestamp: {time_position}")
+
+            # Update the timestamp label under "Arrivals & Departures"
+            timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(2, sheet.max_row+1)])
+            arrivals_departures_text.delete(1.0, END)  # Clear the text widget
+            arrivals_departures_text.insert(END, timestamps)
+
+        root.update_idletasks()
+        root.update()
 
 def save_workbook():
     try:
@@ -251,7 +284,7 @@ if __name__ == "__main__":
     image_widget = ttk.Label(left_frame, image=resized_ex_img)
     image_widget.pack(side=TOP, anchor=N)
     # playback button
-    playback_button = ttk.Button(left_frame, image=play_image, command=lambda: toggle_playback(playback_button),) # logic not implemented
+    playback_button = ttk.Button(left_frame, image=play_image, command=toggle_playback)
     playback_button.pack(side=TOP, anchor=W, padx=200)
     # test button
     # test_button = ttk.Button(left_frame, text="TEST", command=read_capture,) # logic not implemented
