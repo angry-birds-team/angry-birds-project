@@ -50,7 +50,7 @@ time_position = ""
 
 delay_started = False
 delay_start_time = None
-delay_duration = 0  # delay duration in seconds
+delay_duration = 3 # delay duration in seconds
 
 def detect_bird(frame): #function for detecting the bird in a frame
     # do not try and write this variable to a file, it's not compatible
@@ -131,9 +131,9 @@ def open_file():
         input_video_paths = new_input_video_paths
         if cap is not None and cap.isOpened():
             cap.release()
-        # Reset frame number when opening new file
+        
         frame_number = 0
-        # Start processing the first video
+        
         process_next_video()
 
 def process_next_video():
@@ -146,14 +146,11 @@ def process_next_video():
         cap = cv2.VideoCapture(input_video_path)
         current_video_index += 1
     else:
-        # All videos processed, do cleanup or display message
         print("All videos processed")
         return
 
-    # Start processing the video
     read_capture()
 
-# Initialize variables
 input_video_paths = []
 current_video_index = 0
 
@@ -165,21 +162,14 @@ def set_model():
     # Open a file dialog for selecting the TFLite model file
     model_path = filedialog.askopenfilename(title="Select TensorFlow Lite Model", filetypes=(("TFLite files", "*.tflite"), ("All files", "*.*")))
 
-    # Check if a model file was selected
     if model_path:
-        # Update the input model path
         input_model_path = model_path
 
-        model_label.config(text=f"Model: {os.path.basename(input_model_path)}")
+        model_label.config(text=f"Bird: {os.path.basename(input_model_path)}")
 
-        # Create a new interpreter with the selected model
         interpreter = tf.lite.Interpreter(model_path=input_model_path)
         interpreter.allocate_tensors()
 
-        # Update any other relevant parts of your program
-        # (e.g., reset any state related to the previous model)
-
-        # Optionally, update the GUI or display a message to the user
         print(f"Selected model: {input_model_path}")
 
 def set_frame_skip_interval():
@@ -229,7 +219,7 @@ def read_capture():
             # Capture the latest frame and transform to image
             captured_image = Image.fromarray(opencv_image)
 
-            # Resize image
+            # resize image
             captured_image = captured_image.resize((480, 270))
 
             # Convert captured image to photoimage
@@ -253,7 +243,6 @@ def read_capture():
             arrivals_departures_text.delete(1.0, END)  # Clear the text widget
             arrivals_departures_text.insert(END, timestamps)
 
-            # Check if end of video is reached
             if cap.get(cv2.CAP_PROP_POS_FRAMES) == cap.get(cv2.CAP_PROP_FRAME_COUNT):
                 cap.release()  # Release the current video capture
                 process_next_video()  # Process the next video
