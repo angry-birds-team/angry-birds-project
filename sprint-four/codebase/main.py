@@ -118,30 +118,69 @@ def thresholding(checked_frame):    # function for thresholding based on confide
         #print(f"Waiting for {delay_duration} seconds before recording timestamp...")
 
 def open_file():
-    global input_video_path
+    global input_video_paths
     global cap
     global frame_number
 
-    if cap is None:
-        open_file = Tk()
-        open_file.withdraw()  # Hide the main window
-        input_video_path = filedialog.askopenfilename(title="Select Video File", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
-        open_file.destroy()  # Destroy the root window after selection"""
-        cap = cv2.VideoCapture(input_video_path)
-    else:
-        if cap.isOpened():
+    open_file = Tk()
+    open_file.withdraw()  # Hide the main window
+    new_input_video_paths = filedialog.askopenfilenames(title="Select Video Files", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
+    open_file.destroy()  # Destroy the root window after selection
+
+    if new_input_video_paths:
+        input_video_paths = new_input_video_paths
+        if cap is not None and cap.isOpened():
             cap.release()
-        open_file = Tk()
-        open_file.withdraw()  # Hide the main window
-        input_video_path = filedialog.askopenfilename(title="Select Video File", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
-        open_file.destroy()  # Destroy the root window after selection"""
-        cap = cv2.VideoCapture(input_video_path)
-        # make sure to reset frame number when opening new file
+        # Reset frame number when opening new file
         frame_number = 0
+        # Start processing the first video
+        process_next_video()
+
+def process_next_video():
+    global input_video_paths
+    global cap
+    global current_video_index
+
+    if current_video_index < len(input_video_paths):
+        input_video_path = input_video_paths[current_video_index]
+        cap = cv2.VideoCapture(input_video_path)
+        current_video_index += 1
+    else:
+        # All videos processed, do cleanup or display message
+        print("All videos processed")
+        return
+
+    # Start processing the video
+    read_capture()
+
+# Initialize variables
+input_video_paths = []
+current_video_index = 0
+
 
 def set_model():
-    # Write function later. Function should open up file dialog and set model path, see open_file function
-    pass
+    global input_model_path
+    global interpreter
+
+    # Open a file dialog for selecting the TFLite model file
+    model_path = filedialog.askopenfilename(title="Select TensorFlow Lite Model", filetypes=(("TFLite files", "*.tflite"), ("All files", "*.*")))
+
+    # Check if a model file was selected
+    if model_path:
+        # Update the input model path
+        input_model_path = model_path
+
+        model_label.config(text=f"Model: {os.path.basename(input_model_path)}")
+
+        # Create a new interpreter with the selected model
+        interpreter = tf.lite.Interpreter(model_path=input_model_path)
+        interpreter.allocate_tensors()
+
+        # Update any other relevant parts of your program
+        # (e.g., reset any state related to the previous model)
+
+        # Optionally, update the GUI or display a message to the user
+        print(f"Selected model: {input_model_path}")
 
 def set_frame_skip_interval():
     # Write function later. Function should open up window to set frame skip interval
@@ -169,37 +208,38 @@ def toggle_playback():
 def read_capture():
     global playing
     global cap
+    global input_video_path
+    global frame_number
 
     while playing:
         if cap is not None and cap.isOpened():
-            # Capture the video frame by frame 
-            _, frame = cap.read() 
+            # Capture the video frame by frame
+            _, frame = cap.read()
 
             # Increment frame number, update current frame in gui
-            global frame_number
             frame_number += 1
             current_frame_label.config(text=f"Current Frame: {frame_number}")
 
             # Send frame to detect_bird function to check for bird
             detect_bird(frame)
 
-            # Convert image from one color space to other 
-            opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA) 
+            # Convert image from one color space to other
+            opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
 
-            # Capture the latest frame and transform to image 
+            # Capture the latest frame and transform to image
             captured_image = Image.fromarray(opencv_image)
 
-            # resize image
-            captured_image = captured_image.resize((480, 270)) 
+            # Resize image
+            captured_image = captured_image.resize((480, 270))
 
-            # Convert captured image to photoimage 
-            photo_image = ImageTk.PhotoImage(image=captured_image) 
+            # Convert captured image to photoimage
+            photo_image = ImageTk.PhotoImage(image=captured_image)
 
-            # Displaying photoimage in the label 
-            image_widget.photo_image = photo_image 
+            # Displaying photoimage in the label
+            image_widget.photo_image = photo_image
 
-            # Configure image in the label 
-            image_widget.configure(image=photo_image) 
+            # Configure image in the label
+            image_widget.configure(image=photo_image)
 
             # Update time position in gui
             time_raw = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
@@ -213,13 +253,23 @@ def read_capture():
             arrivals_departures_text.delete(1.0, END)  # Clear the text widget
             arrivals_departures_text.insert(END, timestamps)
 
+            # Check if end of video is reached
+            if cap.get(cv2.CAP_PROP_POS_FRAMES) == cap.get(cv2.CAP_PROP_FRAME_COUNT):
+                cap.release()  # Release the current video capture
+                process_next_video()  # Process the next video
+                break
+
         root.update_idletasks()
         root.update()
 
 def save_workbook():
+    global wb
+    
     try:
-        # Save the workbook with a predefined filename
-        wb.save("timestamps.xlsx")
+        # Extract the base name of the video file
+        video_base_name = os.path.splitext(os.path.basename(input_video_path))[0]
+        # Save the workbook with the video's base name as the file name
+        wb.save(f"{video_base_name}_timestamps.xlsx")
         print("Workbook saved successfully")
     except Exception as e:
         print(f"Failed to save workbook: {e}")
@@ -283,6 +333,9 @@ if __name__ == "__main__":
     resized_ex_img = ImageTk.PhotoImage(ex_img)
     image_widget = ttk.Label(left_frame, image=resized_ex_img)
     image_widget.pack(side=TOP, anchor=N)
+    # Create a label to display the currently selected model file
+    model_label = ttk.Label(left_frame, text="Bird: None", font=("Terminal", 12))
+    model_label.pack(side=TOP, anchor=W, padx=10, pady=10)
     # playback button
     playback_button = ttk.Button(left_frame, image=play_image, command=toggle_playback)
     playback_button.pack(side=TOP, anchor=W, padx=200)
