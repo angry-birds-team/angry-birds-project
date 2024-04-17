@@ -12,16 +12,28 @@ from tkinter import *
 from tkinter import ttk
 import tkinter as tk
 from PIL import Image, ImageTk
+from pathlib import Path
+
+path = Path(os.getcwd())
+parent = path.parent.absolute()
+os.chdir(parent)
 
 # load configuration settings
 f = open('sprint-four/codebase/config.json')
 settings = json.load(f)
-input_model_path = settings["input_model_path"]
+model_selected = settings["model_selected"]
+wren_model_path = settings["wren_model_path"]
+warbler_model_path = settings["warbler_model_path"]
 input_video_path = settings["input_video_path"]
 output_video_path = settings["output_video_path"]
 output_timestamps_path = settings["output_timestamps_path"]
 frame_divisor = int(settings["frame_divisor"]) # Only frames with a frame number divisible by this number will be processed (1 for all frames, this is for optimization) 
 confidence_threshold = float(settings["confidence_threshold"]) # confidence threshold should be between 0 and 1
+
+if model_selected == "wren":
+    input_model_path = wren_model_path
+else:
+    input_model_path = warbler_model_path
 
 # create interpreter and load with pre-trained model 
 interpreter = tf.lite.Interpreter(model_path=input_model_path)
@@ -158,7 +170,7 @@ input_video_paths = []
 current_video_index = 0
 
 
-def set_model():
+'''def set_model():
     global input_model_path
     global interpreter
 
@@ -180,7 +192,18 @@ def set_model():
         # (e.g., reset any state related to the previous model)
 
         # Optionally, update the GUI or display a message to the user
-        print(f"Selected model: {input_model_path}")
+        print(f"Selected model: {input_model_path}")'''
+def set_model():
+    model = model_selection.get()
+    if model == 1:
+        input_model_path = wren_model_path
+    else:
+        input_model_path = warbler_model_path
+    model_label.config(text=f"Model: {os.path.basename(input_model_path)}")
+    # Create a new interpreter with the selected model
+    interpreter = tf.lite.Interpreter(model_path=input_model_path)
+    interpreter.allocate_tensors()
+
 
 def set_frame_skip_interval():
     # Write function later. Function should open up window to set frame skip interval
@@ -300,32 +323,6 @@ if __name__ == "__main__":
     right_frame = ttk.Frame(root, padding="3 3 12 12", width=500, height=800)
     right_frame.pack(side="left", anchor=NW, padx=25, pady=25)
 
-    # Create Menu
-    menu = tk.Menu(root)
-
-    # Create File Menu
-    file_menu = tk.Menu(menu, tearoff=False)
-    file_menu.add_command(label="Open File", command=open_file) # Logic partially implemented. 
-    recent_menu = tk.Menu(file_menu, tearoff=False)
-    file_menu.add_cascade(label="Open Recent", menu=recent_menu) # (Logic for this command is not implemented yet.)
-    recent_menu.add_command(label="Example Recent File") # placeholder for visual test
-    menu.add_cascade(label="File", menu=file_menu)
-
-    # Create Settings Menu
-    settings_menu = tk.Menu(menu, tearoff=False)
-    settings_menu.add_command(label="Select Model", command=set_model) # (Logic for this command is not implemented yet.)
-    settings_menu.add_separator()
-    settings_menu.add_command(label="Set Frame Skip Interval", command=set_frame_skip_interval) # (Logic for this command is not implemented yet.)
-    settings_menu.add_command(label="Set Output Destination", command=set_output_destination)
-    settings_menu.add_separator()
-    settings_menu.add_checkbutton(label="Frame Skip") # Logic not implemented
-    settings_menu.add_checkbutton(label="Output Video File") # Logic not implemented
-    settings_menu.add_checkbutton(label="Output Timestamp Spreadsheet") # Logic not implemented
-    menu.add_cascade(label="Settings", menu=settings_menu)
-
-    # Add menu to root window
-    root.config(menu=menu)
-
     # Set up Layout on left side
     # Placeholder image to represent video frame
     ex_img = Image.open("sprint-four/codebase/assets/video_example.png")
@@ -368,5 +365,33 @@ if __name__ == "__main__":
     # Save the timestamps to the workbook
     save_button = ttk.Button(right_frame, text="Save Workbook", command=save_workbook)
     save_button.pack(side=TOP, anchor=NW, pady=10)
+
+        # Create Menu
+    menu = tk.Menu(root)
+
+    # Create File Menu
+    file_menu = tk.Menu(menu, tearoff=False)
+    file_menu.add_command(label="Open File", command=open_file) # Logic partially implemented. 
+    recent_menu = tk.Menu(file_menu, tearoff=False)
+    file_menu.add_cascade(label="Open Recent", menu=recent_menu) # (Logic for this command is not implemented yet.)
+    recent_menu.add_command(label="Example Recent File") # placeholder for visual test
+    menu.add_cascade(label="File", menu=file_menu)
+
+    # Create Settings Menu
+    settings_menu = tk.Menu(menu, tearoff=False)
+    model_selection = IntVar()
+    settings_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model(),value=1)
+    settings_menu.add_radiobutton(label="Warbler",variable=model_selection, command=set_model(),value=2)
+    #settings_menu.add_command(label="Select Model", command=set_model) # (Logic for this command is not implemented yet.)
+    settings_menu.add_separator()
+    settings_menu.add_command(label="Set Frame Skip Interval", command=set_frame_skip_interval) # (Logic for this command is not implemented yet.)
+    settings_menu.add_command(label="Set Output Destination", command=set_output_destination)
+    settings_menu.add_separator()
+    settings_menu.add_checkbutton(label="Frame Skip") # Logic not implemented
+    settings_menu.add_checkbutton(label="Output Video File") # Logic not implemented
+    settings_menu.add_checkbutton(label="Output Timestamp Spreadsheet") # Logic not implemented
+    menu.add_cascade(label="Settings", menu=settings_menu)
+    # Add menu to root window
+    root.config(menu=menu)
 
     root.mainloop()
