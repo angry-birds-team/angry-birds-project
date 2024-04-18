@@ -1,1 +1,8 @@
-Received Feedback from [Blank]:
+Received Feedback from Naitik Kaythwal (Tag Team):
+
+
+Naitik user tested our application. I had him load up a file and run through it with the object detection algorithm. 
+
+He noted that when a file is loaded, the gui still displays "Video Not Found". He found this confusing and suggested it be replaced with a frame from the video.
+
+He also noted that when loading a second video after the first, it didn't load properly for some reason. There is some sort of bug.
