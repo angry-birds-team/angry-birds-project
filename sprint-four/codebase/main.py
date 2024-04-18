@@ -14,9 +14,9 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from pathlib import Path
 
-path = Path(os.getcwd())
-parent = path.parent.absolute()
-os.chdir(parent)
+#path = Path(os.getcwd())
+#parent = path.parent.absolute()
+#os.chdir(parent)
 
 # load configuration settings
 f = open('sprint-four/codebase/config.json')
@@ -379,7 +379,7 @@ if __name__ == "__main__":
 
     # Create Settings Menu
     settings_menu = tk.Menu(menu, tearoff=False)
-    model_selection = IntVar()
+    model_selection = IntVar(None, 1)
     settings_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model(),value=1)
     settings_menu.add_radiobutton(label="Warbler",variable=model_selection, command=set_model(),value=2)
     #settings_menu.add_command(label="Select Model", command=set_model) # (Logic for this command is not implemented yet.)
