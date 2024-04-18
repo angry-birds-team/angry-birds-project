@@ -1,3 +1,15 @@
-Feedback Given to [Blank]:
+Feedback Given to Naitik Kaythwal (Tag Team):
+
+I conducted a user test of the Tag Team's application for TA's. 
+
+I found that the application worked well in general
+
+I noticed a bug where a student's average was not calculated.
+
+I thought that it was confusing that only bad grades were color coded and suggested the good grades be color coded in green.
+
+I thought some of the grade boxes could use better visual seperation.
+
+I thought the sprints should be linked on the progress screen, but I thought the visual indicatators of missing survery, missing feedback, etc., where well designed and clear. 
 
 
