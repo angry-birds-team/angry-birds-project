@@ -100,7 +100,11 @@ def thresholding(checked_frame):    # function for thresholding based on confide
     confidence_percentage = int(checked_frame[0][0] * 100)
 
     # update gui with new confidence percentage
-    confidence_label.config(text=f"Confidence Level: {confidence_percentage}%")
+    # if the gui percentage 
+    if confidence >= confidence_threshold:
+        confidence_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="green")
+    else:
+        confidence_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="black")
 
     # logic for timestamps
     if confidence > confidence_threshold: # check if confidence is above threshold, if it, start a timestamp if one hasn't been already  
@@ -344,11 +348,13 @@ if __name__ == "__main__":
 
     #Top Section
     # time position referred to as timestamp in gui for user ease
-    time_position_label = ttk.Label(right_frame, text=f"Timestamp: {time_position}", font=("Terminal", 20)) # Logic for updating now implemented
+    time_position_label = ttk.Label(right_frame, text=f"Timestamp: {time_position}", font=("Terminal", 20))
     time_position_label.pack(side=TOP, anchor=NW)
-    current_frame_label = ttk.Label(right_frame, text=f"Current Frame: {frame_number}", font=("Terminal", 20)) # Logic for updating now implemented
+    current_frame_label = ttk.Label(right_frame, text=f"Current Frame: {frame_number}", font=("Terminal", 20))
     current_frame_label.pack(side=TOP, anchor=NW)
-    confidence_label = ttk.Label(right_frame, text=f"Confidence Level: {confidence_percentage}%", font=("Terminal", 20)) # Logic for updating now implemented
+    confidence_level_label = ttk.Label(right_frame, text=f"Confidence Level: ", font=("Terminal", 20))
+    confidence_level_label.pack(side=TOP, anchor=NW)
+    confidence_label = ttk.Label(right_frame, text=f"{confidence_percentage}%", font=("Terminal", 20))
     confidence_label.pack(side=TOP, anchor=NW)
 
     #Bottom Section (Split into separate frames?) Note that the top of this section of info is 200 below the top of the right frame
@@ -371,7 +377,7 @@ if __name__ == "__main__":
 
     # Create File Menu
     file_menu = tk.Menu(menu, tearoff=False)
-    file_menu.add_command(label="Open File", command=open_file) # Logic partially implemented. 
+    file_menu.add_command(label="Open File", command=open_file)
     recent_menu = tk.Menu(file_menu, tearoff=False)
     file_menu.add_cascade(label="Open Recent", menu=recent_menu) # (Logic for this command is not implemented yet.)
     recent_menu.add_command(label="Example Recent File") # placeholder for visual test
