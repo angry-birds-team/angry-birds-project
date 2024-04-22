@@ -19,7 +19,7 @@ from pathlib import Path
 #os.chdir(parent)
 
 # load configuration settings
-f = open('sprint-four/codebase/config.json')
+f = open('sprint-four/codebase/config.json', 'r+')
 settings = json.load(f)
 model_selected = settings["model_selected"]
 wren_model_path = settings["wren_model_path"]
@@ -29,10 +29,13 @@ output_video_path = settings["output_video_path"]
 output_timestamps_path = settings["output_timestamps_path"]
 frame_divisor = int(settings["frame_divisor"]) # Only frames with a frame number divisible by this number will be processed (1 for all frames, this is for optimization) 
 confidence_threshold = float(settings["confidence_threshold"]) # confidence threshold should be between 0 and 1
+model_int = 0
 
 if model_selected == "wren":
+    model_int = 1
     input_model_path = wren_model_path
 else:
+    model_int = 2
     input_model_path = warbler_model_path
 
 # create interpreter and load with pre-trained model 
@@ -140,7 +143,31 @@ def open_file():
 
     open_file = Tk()
     open_file.withdraw()  # Hide the main window
+    # open system dialog to open video files
     new_input_video_paths = filedialog.askopenfilenames(title="Select Video Files", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
+
+    # capture first frame and update video player gui
+    vidcap = cv2.VideoCapture(new_input_video_paths[0])
+    success, preview_image = vidcap.read()
+    if success:
+        # Convert image from one color space to other
+        opencv_preview_image = cv2.cvtColor(preview_image, cv2.COLOR_BGR2RGBA)
+
+        # Capture the latest frame and transform to image
+        captured_preview_image = Image.fromarray(opencv_preview_image)
+
+        # Resize image
+        captured_preview_image = captured_preview_image.resize((480, 270))
+
+        # Convert captured image to photoimage
+        photo_preview_image = ImageTk.PhotoImage(image=captured_preview_image)
+
+        # Displaying photoimage in the label
+        image_widget.photo_image = photo_preview_image
+
+        # Configure image in the label
+        image_widget.configure(image=photo_preview_image)
+        
     open_file.destroy()  # Destroy the root window after selection
 
     if new_input_video_paths:
@@ -173,45 +200,26 @@ def process_next_video():
 input_video_paths = []
 current_video_index = 0
 
-
-'''def set_model():
-    global input_model_path
-    global interpreter
-
-    # Open a file dialog for selecting the TFLite model file
-    model_path = filedialog.askopenfilename(title="Select TensorFlow Lite Model", filetypes=(("TFLite files", "*.tflite"), ("All files", "*.*")))
-
-    # Check if a model file was selected
-    if model_path:
-        # Update the input model path
-        input_model_path = model_path
-
-        model_label.config(text=f"Model: {os.path.basename(input_model_path)}")
-
-        # Create a new interpreter with the selected model
-        interpreter = tf.lite.Interpreter(model_path=input_model_path)
-        interpreter.allocate_tensors()
-
-        # Update any other relevant parts of your program
-        # (e.g., reset any state related to the previous model)
-
-        # Optionally, update the GUI or display a message to the user
-        print(f"Selected model: {input_model_path}")'''
 def set_model():    # function for setting model toggle when radio button is clicked
     # get model selected from radio button value
     model = model_selection.get()
-    # update path and label under video
-    print(model)
+    # update path and label under video, write new selected model to file
+    f = open('sprint-four/codebase/config.json', 'r+')
+    settings = json.load(f)
     if model == 1:
         input_model_path = wren_model_path
-        model_label.config(text=f"Scanning For Wrens...")
+        model_label.config(text=f"Wren Model Selected.")
+        settings["model_selected"] = "wren"
     else:
         input_model_path = warbler_model_path
-        model_label.config(text=f"Scanning For Warblers...")
+        model_label.config(text=f"Warbler Model Selected.")
+        settings["model_selected"] = "warbler"
+    f.seek(0)
+    f.truncate()
+    json.dump(settings, f)
     # Create a new interpreter with the selected model
     interpreter = tf.lite.Interpreter(model_path=input_model_path)
     interpreter.allocate_tensors()
-
 
 def set_frame_skip_interval():
     # Write function later. Function should open up window to set frame skip interval
@@ -339,7 +347,10 @@ if __name__ == "__main__":
     image_widget = ttk.Label(left_frame, image=resized_ex_img)
     image_widget.pack(side=TOP, anchor=N)
     # Create a label to display the currently selected model file
-    model_label = ttk.Label(left_frame, text="Scanning for ", font=("Terminal", 12))
+    if model_selected == "wren":
+        model_label = ttk.Label(left_frame, text="Wren Model Selected.", font=("Terminal", 12))
+    else:
+        model_label = ttk.Label(left_frame, text="Warbler Model Selected.", font=("Terminal", 12))
     model_label.pack(side=TOP, anchor=W, padx=10, pady=10)
     # playback button
     playback_button = ttk.Button(left_frame, image=play_image, command=toggle_playback)
@@ -391,7 +402,7 @@ if __name__ == "__main__":
 
     # Create Settings Menu
     settings_menu = tk.Menu(menu, tearoff=False)
-    model_selection = IntVar()
+    model_selection = IntVar(value=model_int)
     settings_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model,value=1)
     settings_menu.add_radiobutton(label="Warbler",variable=model_selection, command=set_model,value=2)
     #settings_menu.add_command(label="Select Model", command=set_model) # (Logic for this command is not implemented yet.)
