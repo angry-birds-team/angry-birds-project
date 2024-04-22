@@ -102,9 +102,9 @@ def thresholding(checked_frame):    # function for thresholding based on confide
     # update gui with new confidence percentage
     # if the gui percentage 
     if confidence >= confidence_threshold:
-        confidence_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="green")
+        confidence_percentage_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="green")
     else:
-        confidence_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="black")
+        confidence_percentage_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="black")
 
     # logic for timestamps
     if confidence > confidence_threshold: # check if confidence is above threshold, if it, start a timestamp if one hasn't been already  
@@ -197,13 +197,17 @@ current_video_index = 0
 
         # Optionally, update the GUI or display a message to the user
         print(f"Selected model: {input_model_path}")'''
-def set_model():
+def set_model():    # function for setting model toggle when radio button is clicked
+    # get model selected from radio button value
     model = model_selection.get()
+    # update path and label under video
+    print(model)
     if model == 1:
         input_model_path = wren_model_path
+        model_label.config(text=f"Scanning For Wrens...")
     else:
         input_model_path = warbler_model_path
-    model_label.config(text=f"Model: {os.path.basename(input_model_path)}")
+        model_label.config(text=f"Scanning For Warblers...")
     # Create a new interpreter with the selected model
     interpreter = tf.lite.Interpreter(model_path=input_model_path)
     interpreter.allocate_tensors()
@@ -335,7 +339,7 @@ if __name__ == "__main__":
     image_widget = ttk.Label(left_frame, image=resized_ex_img)
     image_widget.pack(side=TOP, anchor=N)
     # Create a label to display the currently selected model file
-    model_label = ttk.Label(left_frame, text="Bird: None", font=("Terminal", 12))
+    model_label = ttk.Label(left_frame, text="Scanning for ", font=("Terminal", 12))
     model_label.pack(side=TOP, anchor=W, padx=10, pady=10)
     # playback button
     playback_button = ttk.Button(left_frame, image=play_image, command=toggle_playback)
@@ -352,10 +356,12 @@ if __name__ == "__main__":
     time_position_label.pack(side=TOP, anchor=NW)
     current_frame_label = ttk.Label(right_frame, text=f"Current Frame: {frame_number}", font=("Terminal", 20))
     current_frame_label.pack(side=TOP, anchor=NW)
-    confidence_level_label = ttk.Label(right_frame, text=f"Confidence Level: ", font=("Terminal", 20))
-    confidence_level_label.pack(side=TOP, anchor=NW)
-    confidence_label = ttk.Label(right_frame, text=f"{confidence_percentage}%", font=("Terminal", 20))
-    confidence_label.pack(side=TOP, anchor=NW)
+    confidence_text_widget = Text(right_frame, height=20, width=100, border=False)
+    confidence_text_widget.pack(side=TOP, anchor=NW)
+    confidence_level_label = ttk.Label(confidence_text_widget, text=f"Confidence Level: ", font=("Terminal", 20))
+    confidence_level_label.pack(side=LEFT, anchor=NW)
+    confidence_percentage_label = ttk.Label(confidence_text_widget, text=f"{confidence_percentage}%", font=("Terminal", 20))
+    confidence_percentage_label.pack(side=LEFT, anchor=NW)
 
     #Bottom Section (Split into separate frames?) Note that the top of this section of info is 200 below the top of the right frame
     arrivals_departures_label = ttk.Label(right_frame, text="Arrivals & Departures", font=("Terminal", 20), justify=LEFT)
@@ -372,7 +378,7 @@ if __name__ == "__main__":
     save_button = ttk.Button(right_frame, text="Save Workbook", command=save_workbook)
     save_button.pack(side=TOP, anchor=NW, pady=10)
 
-        # Create Menu
+    # Create Menu
     menu = tk.Menu(root)
 
     # Create File Menu
@@ -385,9 +391,9 @@ if __name__ == "__main__":
 
     # Create Settings Menu
     settings_menu = tk.Menu(menu, tearoff=False)
-    model_selection = IntVar(None, 1)
-    settings_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model(),value=1)
-    settings_menu.add_radiobutton(label="Warbler",variable=model_selection, command=set_model(),value=2)
+    model_selection = IntVar()
+    settings_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model,value=1)
+    settings_menu.add_radiobutton(label="Warbler",variable=model_selection, command=set_model,value=2)
     #settings_menu.add_command(label="Select Model", command=set_model) # (Logic for this command is not implemented yet.)
     settings_menu.add_separator()
     settings_menu.add_command(label="Set Frame Skip Interval", command=set_frame_skip_interval) # (Logic for this command is not implemented yet.)
