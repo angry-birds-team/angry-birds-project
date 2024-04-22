@@ -201,6 +201,7 @@ input_video_paths = []
 current_video_index = 0
 
 def set_model():    # function for setting model toggle when radio button is clicked
+    global model_selected
     # get model selected from radio button value
     model = model_selection.get()
     # update path and label under video, write new selected model to file
@@ -209,10 +210,16 @@ def set_model():    # function for setting model toggle when radio button is cli
     if model == 1:
         input_model_path = wren_model_path
         model_label.config(text=f"Wren Model Selected.")
+        model_selected = "wren"
+        capitalized_model = model_selected.capitalize()
+        arrivals_departures_label.config(text=f"{capitalized_model} Arrivals & Departures", font=("Terminal", 20))
         settings["model_selected"] = "wren"
     else:
         input_model_path = warbler_model_path
         model_label.config(text=f"Warbler Model Selected.")
+        model_selected = "warbler"
+        capitalized_model = model_selected.capitalize()
+        arrivals_departures_label.config(text=f"{capitalized_model} Arrivals & Departures", font=("Terminal", 20))
         settings["model_selected"] = "warbler"
     f.seek(0)
     f.truncate()
@@ -316,7 +323,7 @@ def save_workbook():
 if __name__ == "__main__":
     # Set up root window
     root = Tk()
-    root.geometry("1000x480+0+0")
+    root.geometry("1200x600+0+0")
     root.title("Roc")
 
     # Create images to be used later.
@@ -375,7 +382,8 @@ if __name__ == "__main__":
     confidence_percentage_label.pack(side=LEFT, anchor=NW)
 
     #Bottom Section (Split into separate frames?) Note that the top of this section of info is 200 below the top of the right frame
-    arrivals_departures_label = ttk.Label(right_frame, text="Arrivals & Departures", font=("Terminal", 20), justify=LEFT)
+    capitalized_model = model_selected.capitalize()
+    arrivals_departures_label = ttk.Label(right_frame, text=f"{capitalized_model} Arrivals & Departures", font=("Terminal", 20), justify=LEFT)
     arrivals_departures_label.pack(side=TOP, anchor=NW, pady=20)
 
     # Scrollbar for arrival and departure
