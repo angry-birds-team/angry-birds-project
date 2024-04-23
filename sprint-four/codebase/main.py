@@ -24,7 +24,7 @@ settings = json.load(f)
 model_selected = settings["model_selected"]
 wren_model_path = settings["wren_model_path"]
 warbler_model_path = settings["warbler_model_path"]
-input_video_path = settings["input_video_path"]
+input_video_path = settings["input_video_path"] # no longer needed, i believe?  (video files are selected in open_file)
 output_video_path = settings["output_video_path"]
 output_timestamps_path = settings["output_timestamps_path"]
 frame_divisor = int(settings["frame_divisor"]) # Only frames with a frame number divisible by this number will be processed (1 for all frames, this is for optimization) 
@@ -66,6 +66,11 @@ time_position = ""
 delay_started = False
 delay_start_time = None
 delay_duration = 0  # delay duration in seconds
+
+# Initialize variables for video selection
+input_video_paths = []
+current_video_index = 0
+
 
 def detect_bird(frame): #function for detecting the bird in a frame
     # do not try and write this variable to a file, it's not compatible
@@ -192,13 +197,8 @@ def process_next_video():
         # All videos processed, do cleanup or display message
         print("All videos processed")
         return
-
     # Start processing the video
     read_capture()
-
-# Initialize variables
-input_video_paths = []
-current_video_index = 0
 
 def set_model():    # function for setting model toggle when radio button is clicked
     global model_selected
@@ -209,17 +209,15 @@ def set_model():    # function for setting model toggle when radio button is cli
     settings = json.load(f)
     if model == 1:
         input_model_path = wren_model_path
-        model_label.config(text=f"Wren Model Selected.")
         model_selected = "wren"
-        capitalized_model = model_selected.capitalize()
-        arrivals_departures_label.config(text=f"{capitalized_model} Arrivals & Departures", font=("Terminal", 20))
+        model_label.config(text=f"Model Selected: {model_selected.capitalize()}")
+        arrivals_departures_label.config(text=f"{model_selected.capitalize()} Arrivals & Departures", font=("Terminal", 20))
         settings["model_selected"] = "wren"
     else:
         input_model_path = warbler_model_path
-        model_label.config(text=f"Warbler Model Selected.")
         model_selected = "warbler"
-        capitalized_model = model_selected.capitalize()
-        arrivals_departures_label.config(text=f"{capitalized_model} Arrivals & Departures", font=("Terminal", 20))
+        model_label.config(text=f"Model Selected: {model_selected.capitalize()}")
+        arrivals_departures_label.config(text=f"{model_selected.capitalize()} Arrivals & Departures", font=("Terminal", 20))
         settings["model_selected"] = "warbler"
     f.seek(0)
     f.truncate()
@@ -354,10 +352,7 @@ if __name__ == "__main__":
     image_widget = ttk.Label(left_frame, image=resized_ex_img)
     image_widget.pack(side=TOP, anchor=N)
     # Create a label to display the currently selected model file
-    if model_selected == "wren":
-        model_label = ttk.Label(left_frame, text="Wren Model Selected.", font=("Terminal", 12))
-    else:
-        model_label = ttk.Label(left_frame, text="Warbler Model Selected.", font=("Terminal", 12))
+    model_label = ttk.Label(left_frame, text=f"Model Selected: {model_selected.capitalize()}", font=("Terminal", 12))
     model_label.pack(side=TOP, anchor=W, padx=10, pady=10)
     # playback button
     playback_button = ttk.Button(left_frame, image=play_image, command=toggle_playback)
@@ -382,8 +377,7 @@ if __name__ == "__main__":
     confidence_percentage_label.pack(side=LEFT, anchor=NW)
 
     #Bottom Section (Split into separate frames?) Note that the top of this section of info is 200 below the top of the right frame
-    capitalized_model = model_selected.capitalize()
-    arrivals_departures_label = ttk.Label(right_frame, text=f"{capitalized_model} Arrivals & Departures", font=("Terminal", 20), justify=LEFT)
+    arrivals_departures_label = ttk.Label(right_frame, text=f"{model_selected.capitalize()} Arrivals & Departures", font=("Terminal", 20), justify=LEFT)
     arrivals_departures_label.pack(side=TOP, anchor=NW, pady=20)
 
     # Scrollbar for arrival and departure
