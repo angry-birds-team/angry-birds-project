@@ -196,6 +196,10 @@ def process_next_video():
     else:
         # All videos processed, do cleanup or display message
         print("All videos processed")
+        # clear video queue
+        input_video_paths = []
+        # stop playing
+        playback_button.invoke()
         return
     # Start processing the video
     read_capture()
