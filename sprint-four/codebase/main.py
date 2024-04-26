@@ -173,26 +173,21 @@ current_video_index = 0
 '''def set_model():
     global input_model_path
     global interpreter
-
     # Open a file dialog for selecting the TFLite model file
     model_path = filedialog.askopenfilename(title="Select TensorFlow Lite Model", filetypes=(("TFLite files", "*.tflite"), ("All files", "*.*")))
-
     # Check if a model file was selected
     if model_path:
         # Update the input model path
         input_model_path = model_path
-
         model_label.config(text=f"Model: {os.path.basename(input_model_path)}")
-
         # Create a new interpreter with the selected model
         interpreter = tf.lite.Interpreter(model_path=input_model_path)
         interpreter.allocate_tensors()
-
         # Update any other relevant parts of your program
         # (e.g., reset any state related to the previous model)
-
         # Optionally, update the GUI or display a message to the user
         print(f"Selected model: {input_model_path}")'''
+
 def set_model():
     model = model_selection.get()
     if model == 1:
@@ -203,7 +198,6 @@ def set_model():
     # Create a new interpreter with the selected model
     interpreter = tf.lite.Interpreter(model_path=input_model_path)
     interpreter.allocate_tensors()
-
 
 def set_frame_skip_interval():
     # Write function later. Function should open up window to set frame skip interval
@@ -227,6 +221,46 @@ def toggle_playback():
             playing = True
             playback_button.config(image=pause_image)
             read_capture()
+
+def show_timestamp_details(event):
+
+    index = arrivals_departures_text.index("@%s,%s" % (event.x, event.y))
+    
+    timestamp = arrivals_departures_text.get(index + " linestart", index + " lineend")
+    
+    minutes, seconds = map(int, timestamp.split(" - ")[0].split(":"))
+    
+    total_seconds = minutes * 60 + seconds
+    
+    cap = cv2.VideoCapture(input_video_path) #Bug: Video have to be "sprint-four/input/0409Pt2.MP4" to work.
+    #cap = cv2.VideoCapture(input_video_paths[current_video_index]) #Bug: Broken clickable timestamps. Looks like the array is loading the second spot instead of the first.
+    cap.set(cv2.CAP_PROP_POS_MSEC, total_seconds * 1000)
+    
+    ret, frame = cap.read()
+    
+    if not ret:
+        print("Failed to read frame from video")
+        return
+    
+    resized_frame = cv2.resize(frame, (320, 240))
+
+    new_window = Toplevel(root)
+    new_window.title("Paused Video Frame")
+    
+    canvas = Canvas(new_window, width=resized_frame.shape[1], height=resized_frame.shape[0])
+    canvas.pack()
+    
+    frame_rgb = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
+    
+    image = Image.fromarray(frame_rgb)
+    photo_image = ImageTk.PhotoImage(image=image)
+    
+    canvas.create_image(0, 0, anchor=NW, image=photo_image)
+    
+    canvas.photo_image = photo_image
+    
+    cap.release()
+
 
 def read_capture():
     global playing
@@ -271,10 +305,14 @@ def read_capture():
             time_position = f"{minutes_raw:02}:{seconds_raw:02}"
             time_position_label.config(text=f"Timestamp: {time_position}")
 
+            arrivals_departures_text.tag_configure("clickable", foreground="blue", underline=1)
+            arrivals_departures_text.tag_bind("clickable", "<Button-1>", show_timestamp_details)
+
             # Update the timestamp label under "Arrivals & Departures"
             timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(2, sheet.max_row+1)])
             arrivals_departures_text.delete(1.0, END)  # Clear the text widget
             arrivals_departures_text.insert(END, timestamps)
+            arrivals_departures_text.tag_add("clickable", "1.0", "end")
 
             # Check if end of video is reached
             if cap.get(cv2.CAP_PROP_POS_FRAMES) == cap.get(cv2.CAP_PROP_FRAME_COUNT):
