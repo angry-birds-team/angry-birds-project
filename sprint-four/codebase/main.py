@@ -13,6 +13,7 @@ from tkinter import ttk
 import tkinter as tk
 from PIL import Image, ImageTk
 from pathlib import Path
+from collections import deque
 
 #path = Path(os.getcwd())
 #parent = path.parent.absolute()
@@ -68,8 +69,9 @@ delay_start_time = None
 delay_duration = 0  # delay duration in seconds
 
 # Initialize variables for video selection
-input_video_paths = []
+input_video_paths = deque()
 current_video_index = 0
+video_selected = ""
 
 
 def detect_bird(frame): #function for detecting the bird in a frame
@@ -141,19 +143,24 @@ def thresholding(checked_frame):    # function for thresholding based on confide
     #if delay_started:
         #print(f"Waiting for {delay_duration} seconds before recording timestamp...")
 
-def open_file():
+def open_files(): #function to a set of files
     global input_video_paths
     global cap
     global frame_number
 
-    open_file = Tk()
-    open_file.withdraw()  # Hide the main window
     # open system dialog to open video files
-    new_input_video_paths = filedialog.askopenfilenames(title="Select Video Files", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
+    paths_tuple = filedialog.askopenfilenames(title="Select Video Files", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
+
+    input_video_paths.extend(paths_tuple)
+    input_video_paths.reverse()
 
     # capture first frame and update video player gui
-    vidcap = cv2.VideoCapture(new_input_video_paths[0])
-    success, preview_image = vidcap.read()
+    if cap is not None and cap.isOpened():
+        cap.release()
+    cap = cv2.VideoCapture(input_video_paths[-1])
+    video_selected = os.path.basename(input_video_paths[-1])
+    video_label.config(text=f"Video Selected:\n\n {video_selected}", font=("Terminal", 20))
+    success, preview_image = cap.read()
     if success:
         # Convert image from one color space to other
         opencv_preview_image = cv2.cvtColor(preview_image, cv2.COLOR_BGR2RGBA)
@@ -172,19 +179,17 @@ def open_file():
 
         # Configure image in the label
         image_widget.configure(image=photo_preview_image)
-        
-    open_file.destroy()  # Destroy the root window after selection
+    if cap is not None and cap.isOpened():
+        cap.release()
+    # Reset frame number when opening new file
+    frame_number = 0
+    # Start processing the first video
+    first_video = input_video_paths.pop()
+    cap = cv2.VideoCapture(first_video)
 
-    if new_input_video_paths:
-        input_video_paths = new_input_video_paths
-        if cap is not None and cap.isOpened():
-            cap.release()
-        # Reset frame number when opening new file
-        frame_number = 0
-        # Start processing the first video
-        process_next_video()
 
-def process_next_video():
+
+'''def process_next_video():
     global input_video_paths
     global cap
     global current_video_index
@@ -202,7 +207,7 @@ def process_next_video():
         playback_button.invoke()
         return
     # Start processing the video
-    read_capture()
+    read_capture()'''
 
 def set_model():    # function for setting model toggle when radio button is clicked
     global model_selected
@@ -214,15 +219,13 @@ def set_model():    # function for setting model toggle when radio button is cli
     if model == 1:
         input_model_path = wren_model_path
         model_selected = "wren"
-        model_label.config(text=f"Model Selected: {model_selected.capitalize()}")
-        arrivals_departures_label.config(text=f"{model_selected.capitalize()} Arrivals & Departures", font=("Terminal", 20))
         settings["model_selected"] = "wren"
     else:
         input_model_path = warbler_model_path
         model_selected = "warbler"
-        model_label.config(text=f"Model Selected: {model_selected.capitalize()}")
-        arrivals_departures_label.config(text=f"{model_selected.capitalize()} Arrivals & Departures", font=("Terminal", 20))
         settings["model_selected"] = "warbler"
+    model_label.config(text=f"Model Selected:\n\n {model_selected.capitalize()}")
+    arrivals_departures_label.config(text=f"{model_selected.capitalize()} Arrivals & Departures", font=("Terminal", 20))
     f.seek(0)
     f.truncate()
     json.dump(settings, f)
@@ -242,16 +245,16 @@ def toggle_playback():
     global playing
     global cap
 
-    if cap is None:
-        print("No video selected. Select a video first.")
-    else:
-        if playing:
-            playing = False
-            playback_button.config(image=play_image)
-        else:   
-            playing = True
-            playback_button.config(image=pause_image)
-            read_capture()
+    #if cap is None:
+    #    print("No video selected. Select a video first.")
+    #else:
+    if playing:
+        playing = False
+        playback_button.config(image=play_image)
+    else:   
+        playing = True
+        playback_button.config(image=pause_image)
+        read_capture()
 
 def read_capture():
     global playing
@@ -259,56 +262,63 @@ def read_capture():
     global input_video_path
     global frame_number
 
-    while playing:
-        if cap is not None and cap.isOpened():
-            # Capture the video frame by frame
-            _, frame = cap.read()
+    if cap is not None and cap.isOpened():
+        # Capture the video frame by frame
+        _, frame = cap.read()
 
-            # Increment frame number, update current frame in gui
-            frame_number += 1
-            current_frame_label.config(text=f"Current Frame: {frame_number}")
+        # Increment frame number, update current frame in gui
+        frame_number += 1
+        current_frame_label.config(text=f"Current Frame: {frame_number}")
 
-            # Send frame to detect_bird function to check for bird
-            detect_bird(frame)
+        # Send frame to detect_bird function to check for bird
+        detect_bird(frame)
 
-            # Convert image from one color space to other
-            opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+        # Convert image from one color space to other
+        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
 
-            # Capture the latest frame and transform to image
-            captured_image = Image.fromarray(opencv_image)
+        # Capture the latest frame and transform to image
+        captured_image = Image.fromarray(opencv_image)
 
-            # Resize image
-            captured_image = captured_image.resize((480, 270))
+        # Resize image
+        captured_image = captured_image.resize((480, 270))
 
-            # Convert captured image to photoimage
-            photo_image = ImageTk.PhotoImage(image=captured_image)
+        # Convert captured image to photoimage
+        photo_image = ImageTk.PhotoImage(image=captured_image)
 
-            # Displaying photoimage in the label
-            image_widget.photo_image = photo_image
+        # Displaying photoimage in the label
+        image_widget.photo_image = photo_image
 
-            # Configure image in the label
-            image_widget.configure(image=photo_image)
+        # Configure image in the label
+        image_widget.configure(image=photo_image)
 
-            # Update time position in gui
-            time_raw = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-            minutes_raw = int(time_raw // 60)
-            seconds_raw = int(time_raw % 60)
-            time_position = f"{minutes_raw:02}:{seconds_raw:02}"
-            time_position_label.config(text=f"Timestamp: {time_position}")
+        # Update time position in gui
+        time_raw = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+        minutes_raw = int(time_raw // 60)
+        seconds_raw = int(time_raw % 60)
+        time_position = f"{minutes_raw:02}:{seconds_raw:02}"
+        time_position_label.config(text=f"Timestamp: {time_position}")
 
-            # Update the timestamp label under "Arrivals & Departures"
-            timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(2, sheet.max_row+1)])
-            arrivals_departures_text.delete(1.0, END)  # Clear the text widget
-            arrivals_departures_text.insert(END, timestamps)
+        # Update the timestamp label under "Arrivals & Departures"
+        timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(2, sheet.max_row+1)])
+        arrivals_departures_text.delete(1.0, END)  # Clear the text widget
+        arrivals_departures_text.insert(END, timestamps)
 
-            # Check if end of video is reached
-            if cap.get(cv2.CAP_PROP_POS_FRAMES) == cap.get(cv2.CAP_PROP_FRAME_COUNT):
-                cap.release()  # Release the current video capture
-                process_next_video()  # Process the next video
-                break
-
-        root.update_idletasks()
-        root.update()
+        # Check if end of video is reached
+        if cap.get(cv2.CAP_PROP_POS_FRAMES) < cap.get(cv2.CAP_PROP_FRAME_COUNT):
+            if playing:
+                image_widget.after(1, read_capture)
+        else: # if it has been, load next video
+            cap.release()  # Release the current video capture
+            if len(input_video_paths) == 0: # if no more videos are left, finish
+                print("All videos finished processing.")
+                playback_button.invoke()
+                image_widget.config(image=resized_ex_img)
+            else: # if another video is left, update the video label gui element and open the capture to that new video
+                video_selected = os.path.basename(input_video_paths[-1])
+                video_label.config(text=f"Video Selected:\n\n {video_selected}", font=("Terminal", 20))
+                cap.open(input_video_paths.pop())
+            if playing:
+                image_widget.after(1, read_capture)
 
 def save_workbook():
     global wb
@@ -339,6 +349,7 @@ if __name__ == "__main__":
     # Set up left frame for video playback.
     left_frame = ttk.Frame(root, padding="3 3 12 12", width=500, height=800)
     left_frame.pack(side="left", anchor=NW, padx=25, pady=25)
+    left_frame.pack_propagate(False)
 
     # Add a separator between the left and right frames
     separator = ttk.Separator(root, orient='vertical')
@@ -355,12 +366,15 @@ if __name__ == "__main__":
     resized_ex_img = ImageTk.PhotoImage(ex_img)
     image_widget = ttk.Label(left_frame, image=resized_ex_img)
     image_widget.pack(side=TOP, anchor=N)
-    # Create a label to display the currently selected model file
-    model_label = ttk.Label(left_frame, text=f"Model Selected: {model_selected.capitalize()}", font=("Terminal", 12))
-    model_label.pack(side=TOP, anchor=W, padx=10, pady=10)
     # playback button
     playback_button = ttk.Button(left_frame, image=play_image, command=toggle_playback)
     playback_button.pack(side=TOP, anchor=W, padx=200)
+    # Create a label to display the currently selected model file
+    model_label = ttk.Label(left_frame, text=f"Model Selected:\n\n {model_selected.capitalize()}", font=("Terminal", 20))
+    model_label.pack(side=TOP, anchor=W, padx=10, pady=10)
+    # Create a label to display the currently selected video file
+    video_label = ttk.Label(left_frame, text=f"Video Selected:\n\n None", font=("Terminal", 20))
+    video_label.pack(side=TOP, anchor=W, padx=10, pady=10)
     # test button
     # test_button = ttk.Button(left_frame, text="TEST", command=read_capture,) # logic not implemented
     # test_button.pack(side=TOP, anchor=W, padx=200)
@@ -400,7 +414,7 @@ if __name__ == "__main__":
 
     # Create File Menu
     file_menu = tk.Menu(menu, tearoff=False)
-    file_menu.add_command(label="Open File", command=open_file)
+    file_menu.add_command(label="Open File", command=open_files)
     recent_menu = tk.Menu(file_menu, tearoff=False)
     file_menu.add_cascade(label="Open Recent", menu=recent_menu) # (Logic for this command is not implemented yet.)
     recent_menu.add_command(label="Example Recent File") # placeholder for visual test
