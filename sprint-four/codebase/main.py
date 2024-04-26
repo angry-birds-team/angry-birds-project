@@ -15,12 +15,20 @@ from PIL import Image, ImageTk
 from pathlib import Path
 from collections import deque
 
-#path = Path(os.getcwd())
+path = Path(os.getcwd())
+print(path)
 #parent = path.parent.absolute()
 #os.chdir(parent)
+# define paths for project
+# remember, normal current cwd is angry-birds-project
+codebase_path = "sprint-four/codebase/"
+models_path = "sprint-four/models/"
+input_path = "sprint-four/models/"
+output_path = "sprint-four/output/"
+
 
 # load configuration settings
-f = open('sprint-four/codebase/config.json', 'r+')
+f = open(f'{codebase_path}/config.json', 'r+')
 settings = json.load(f)
 model_selected = settings["model_selected"]
 wren_model_path = settings["wren_model_path"]
@@ -48,11 +56,6 @@ input_details = interpreter.get_input_details() # list of dictionaries, each dic
 output_details = interpreter.get_output_details() # list of dictionaries, each dictionary has details about an input tensor
 input_shape = input_details[0]['shape'] # array of shape of input tensor
 
-# open workbook for collecting timestamps to later output to excel file
-wb = openpyxl.Workbook()
-sheet = wb.active
-sheet.append(["Start Time (min:sec)", "End Time (min:sec)"])
-
 # Declare global variables
 
 # variable for whether or not the video is playback is paused. True for playing, False for Paused
@@ -64,89 +67,26 @@ confidence_percentage = 0
 timestamp_start = None
 time_position = ""
 
+# initialize variables for delay to avoid duplicate timestamps
+# don't set to above zero, this code isn't working yet
 delay_started = False
 delay_start_time = None
-delay_duration = 0  # delay duration in seconds
+delay_duration = 0  # delay duration in seconds (how long the bird needs to be missing to end a timestamp)
 
 # Initialize variables for video selection
 input_video_paths = deque()
 current_video_index = 0
 video_selected = ""
 
-
-def detect_bird(frame): #function for detecting the bird in a frame
-    # do not try and write this variable to a file, it's not compatible
-    processed = preprocess_frame(frame)
-    if frame_number % frame_divisor == 0: # only check every frame divisible by preset number to save time
-            # send processed frame to interpreter be checked for bird
-            checked = check_frame(processed)
-            # send checked frame to thresholding to see if confidence is high enough
-            # if so, handle confidence stamp and timestamp
-            thresholding(checked)
-
-def preprocess_frame(frame):     # function for processing frames from capture
-    if frame is None or frame.size == 0:
-        return None
-    
-    resized_frame = cv2.resize(frame, (input_shape[1], input_shape[2]))
-    normalized_frame = resized_frame / 255.0  
-    return np.expand_dims(normalized_frame, axis=0)
-
-
-def check_frame(processed):   # function for sending frame to interpreter to be checked for bird
-        processed = np.float32(processed)
-        interpreter.set_tensor(input_details[0]['index'], processed)
-        interpreter.invoke()
-        return interpreter.get_tensor(output_details[0]['index'])
-
-def thresholding(checked_frame):    # function for thresholding based on confidence of model
-    global confidence_percentage
-    global timestamp_start
-    global delay_started
-    global delay_start_time
-
-    # get confidence from model
-    confidence = checked_frame[0][0]
-    confidence_percentage = int(checked_frame[0][0] * 100)
-
-    # update gui with new confidence percentage
-    # if the gui percentage 
-    if confidence >= confidence_threshold:
-        confidence_percentage_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="green")
-    else:
-        confidence_percentage_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="black")
-
-    # logic for timestamps
-    if confidence > confidence_threshold: # check if confidence is above threshold, if it, start a timestamp if one hasn't been already  
-        if timestamp_start is None:
-            timestamp_start = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-        delay_started = False  # reset delay if confidence is back up
-    else: # if we're below confidence_threshold
-        if timestamp_start is not None:  # check if we had started a timestamp
-            if not delay_started:  # start delay if it hasn't started
-                delay_started = True
-                delay_start_time = time.time()
-            else:  # check if delay is over
-                current_time = time.time()
-                if current_time - delay_start_time >= delay_duration:
-                    timestamp_end = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-                    minutes_start = int(timestamp_start // 60)
-                    seconds_start = int(timestamp_start % 60)
-                    minutes_end = int(timestamp_end // 60)
-                    seconds_end = int(timestamp_end % 60)
-                    timestamp_start_string = f"{minutes_start:02}:{seconds_start:02}"
-                    timestamp_end_string = f"{minutes_end:02}:{seconds_end:02}"
-                    sheet.append([timestamp_start_string, timestamp_end_string])
-                    timestamp_start = None
-                    delay_started = False
-    #Testing delay
-    #if delay_started:
-        #print(f"Waiting for {delay_duration} seconds before recording timestamp...")
+# open workbook for collecting timestamps to later output to excel file
+# reserve first sheet for first video
+global_workbook = openpyxl.Workbook()
 
 def open_files(): #function to a set of files
     global input_video_paths
     global cap
     global frame_number
+    global first_sheet
 
     # open system dialog to open video files
     paths_tuple = filedialog.askopenfilenames(title="Select Video Files", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
@@ -183,11 +123,86 @@ def open_files(): #function to a set of files
         cap.release()
     # Reset frame number when opening new file
     frame_number = 0
+
     # Start processing the first video
     first_video = input_video_paths.pop()
     cap = cv2.VideoCapture(first_video)
 
+    # create first sheet for first video
+    first_sheet = global_workbook.active
+    first_sheet.append(["Timesheet for:", f"{os.path.basename(first_video)}"])
+    first_sheet.append(["Start Time (min:sec)", "End Time (min:sec)"])
 
+
+def detect_bird(frame): #function for detecting the bird in a frame
+    # do not try and write this variable to a file, it's not compatible
+    processed = preprocess_frame(frame)
+    if frame_number % frame_divisor == 0: # only check every frame divisible by preset number to save time
+            # send processed frame to interpreter be checked for bird
+            checked = check_frame(processed)
+            # send checked frame to thresholding to see if confidence is high enough
+            # if so, handle confidence stamp and timestamp
+            thresholding(checked)
+
+def preprocess_frame(frame):     # function for processing frames from capture
+    if frame is None or frame.size == 0:
+        return None
+    
+    resized_frame = cv2.resize(frame, (input_shape[1], input_shape[2]))
+    normalized_frame = resized_frame / 255.0  
+    return np.expand_dims(normalized_frame, axis=0)
+
+
+def check_frame(processed):   # function for sending frame to interpreter to be checked for bird
+        processed = np.float32(processed)
+        interpreter.set_tensor(input_details[0]['index'], processed)
+        interpreter.invoke()
+        return interpreter.get_tensor(output_details[0]['index'])
+
+def thresholding(checked_frame):    # function for thresholding based on confidence of model
+    global confidence_percentage
+    global timestamp_start
+    global delay_started
+    global delay_start_time
+    global global_workbook
+
+    # get confidence from model
+    confidence = checked_frame[0][0]
+    confidence_percentage = int(checked_frame[0][0] * 100)
+
+    # update gui with new confidence percentage
+    # if the gui percentage 
+    if confidence >= confidence_threshold:
+        confidence_percentage_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="green")
+    else:
+        confidence_percentage_label.config(text=f"{confidence_percentage}%", font=("Terminal", 20), foreground="black")
+
+    # logic for timestamps
+    if confidence > confidence_threshold: # check if confidence is above threshold, if it, start a timestamp if one hasn't been already  
+        if timestamp_start is None:
+            timestamp_start = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+        delay_started = False  # reset delay if confidence is back up
+    else: # if we're below confidence_threshold
+        if timestamp_start is not None:  # check if we had started a timestamp
+            if not delay_started:  # start delay if it hasn't started
+                delay_started = True
+                delay_start_time = time.time()
+            else:  # check if delay is over
+                current_time = time.time()
+                if current_time - delay_start_time >= delay_duration:
+                    timestamp_end = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+                    minutes_start = int(timestamp_start // 60)
+                    seconds_start = int(timestamp_start % 60)
+                    minutes_end = int(timestamp_end // 60)
+                    seconds_end = int(timestamp_end % 60)
+                    timestamp_start_string = f"{minutes_start:02}:{seconds_start:02}"
+                    timestamp_end_string = f"{minutes_end:02}:{seconds_end:02}"
+                    first_sheet.append([timestamp_start_string, timestamp_end_string])
+                    timestamp_start = None
+                    delay_started = False
+    #Testing delay
+    #if delay_started:
+        #print(f"Waiting for {delay_duration} seconds before recording timestamp...")
 
 '''def process_next_video():
     global input_video_paths
@@ -299,7 +314,7 @@ def read_capture():
         time_position_label.config(text=f"Timestamp: {time_position}")
 
         # Update the timestamp label under "Arrivals & Departures"
-        timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(2, sheet.max_row+1)])
+        timestamps = "\n".join([f"{first_sheet.cell(row=i, column=1).value} - {first_sheet.cell(row=i, column=2).value}" for i in range(1, first_sheet.max_row+1)])
         arrivals_departures_text.delete(1.0, END)  # Clear the text widget
         arrivals_departures_text.insert(END, timestamps)
 
@@ -313,6 +328,7 @@ def read_capture():
                 print("All videos finished processing.")
                 playback_button.invoke()
                 image_widget.config(image=resized_ex_img)
+                save_workbook()
             else: # if another video is left, update the video label gui element and open the capture to that new video
                 video_selected = os.path.basename(input_video_paths[-1])
                 video_label.config(text=f"Video Selected:\n\n {video_selected}", font=("Terminal", 20))
@@ -321,13 +337,13 @@ def read_capture():
                 image_widget.after(1, read_capture)
 
 def save_workbook():
-    global wb
+    global global_workbook
     
     try:
         # Extract the base name of the video file
         video_base_name = os.path.splitext(os.path.basename(input_video_path))[0]
         # Save the workbook with the video's base name as the file name
-        wb.save(f"{video_base_name}_timestamps.xlsx")
+        global_workbook.save(f"{output_path}/timestamps.xlsx")
         print("Workbook saved successfully")
     except Exception as e:
         print(f"Failed to save workbook: {e}")
