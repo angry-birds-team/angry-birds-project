@@ -91,8 +91,6 @@ def open_files(): #function to a set of files
     # open system dialog to open video files
     paths_tuple = filedialog.askopenfilenames(title="Select Video Files", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")), initialdir=f"{path}/{input_path}")
 
-    print(f"!!\nPaths Tuple: {paths_tuple}\n!!")
-
     # if the user doesn't select a file, abort
     if paths_tuple is None or len(paths_tuple)==0:
         return
@@ -439,13 +437,10 @@ if __name__ == "__main__":
     # Create Menu
     menu = tk.Menu(root)
 
-    # Create File Menu
-    file_menu = tk.Menu(menu, tearoff=False)
-    file_menu.add_command(label="Open File", command=open_files)
-    recent_menu = tk.Menu(file_menu, tearoff=False)
-    file_menu.add_cascade(label="Open Recent", menu=recent_menu) # (Logic for this command is not implemented yet.)
-    recent_menu.add_command(label="Example Recent File") # placeholder for visual test
-    menu.add_cascade(label="File", menu=file_menu)
+    # Create Open File Menu Command (code for full file menu commented out incase it needs to be re-implemented)
+    #file_menu = tk.Menu(menu, tearoff=False)
+    menu.add_command(label="Open File", command=open_files)
+    #menu.add_cascade(label="File", menu=file_menu)
 
     # Create Settings Menu
     settings_menu = tk.Menu(menu, tearoff=False)
