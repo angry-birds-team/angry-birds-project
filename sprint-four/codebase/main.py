@@ -252,9 +252,28 @@ def set_model():    # function for setting model toggle when radio button is cli
     interpreter = tf.lite.Interpreter(model_path=input_model_path)
     interpreter.allocate_tensors()
 
-def set_frame_skip_interval():
-    # Write function later. Function should open up window to set frame skip interval
-    pass
+def set_frame_skip_interval(): # update frame skip 
+
+    def update_frame_skip(event):
+        global frame_divisor
+        frame_divisor = selected_frame_skip.get()
+        print(frame_divisor)
+
+    #frame_skip_input = ""
+    selected_frame_skip = IntVar()
+    selected_frame_skip.set(frame_divisor)
+
+    frame_skip_window = Toplevel(root)
+    frame_skip_window.geometry("300x100+200+0")
+    frame_skip_window.title("Select Frame Divisor")
+    frame_skip_label = tk.Label(frame_skip_window, text="Program will skip every frame not divisible by:")
+    frame_skip_label.pack(side=TOP)
+    #frame_skip_entry = tk.Entry(frame_skip_window, textvariable=frame_skip_input)
+    #frame_skip_entry.pack(side=TOP)
+    frame_skip_select = ttk.Combobox(frame_skip_window, values=list(range(1,101)), state="readonly", textvariable=selected_frame_skip)
+    frame_skip_select.pack(side=TOP)
+    frame_skip_select.bind("<<ComboboxSelected>>", update_frame_skip)
+
 
 def set_output_destination():
     # Write function later. Function should open up window to set output directory for video & spreadsheet
@@ -370,6 +389,12 @@ if __name__ == "__main__":
     pause_image = Image.open("sprint-four/codebase/assets/pause.png")
     pause_image = pause_image.resize((25, 25))
     pause_image = ImageTk.PhotoImage(pause_image)
+    icon_image = Image.open("sprint-four/codebase/assets/icon.png")
+    icon_image = icon_image.resize((25,25))
+    icon_image = ImageTk.PhotoImage(icon_image)
+
+    #set icon for root
+    root.iconphoto(False, icon_image)
 
     # Set up left frame for video playback.
     left_frame = ttk.Frame(root, padding="3 3 12 12", width=500, height=800)
@@ -442,7 +467,18 @@ if __name__ == "__main__":
     menu.add_command(label="Open File", command=open_files)
     #menu.add_cascade(label="File", menu=file_menu)
 
-    # Create Settings Menu
+    # Create Model Menu
+    model_menu = tk.Menu(menu, tearoff=False)
+    model_selection = IntVar(value=model_int)
+    model_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model, value=1)
+    model_menu.add_radiobutton(label="Warbler",variable=model_selection, command=set_model, value=2)
+    menu.add_cascade(label="Model", menu=model_menu)
+
+    # Create Set Frame Skip Command
+    menu.add_command(label="Set Frame Skip", command=set_frame_skip_interval)
+
+
+    '''# Create Settings Menu
     settings_menu = tk.Menu(menu, tearoff=False)
     model_selection = IntVar(value=model_int)
     settings_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model,value=1)
@@ -455,7 +491,8 @@ if __name__ == "__main__":
     settings_menu.add_checkbutton(label="Frame Skip") # Logic not implemented
     settings_menu.add_checkbutton(label="Output Video File") # Logic not implemented
     settings_menu.add_checkbutton(label="Output Timestamp Spreadsheet") # Logic not implemented
-    menu.add_cascade(label="Settings", menu=settings_menu)
+    menu.add_cascade(label="Settings", menu=settings_menu)'''
+
     # Add menu to root window
     root.config(menu=menu)
 
