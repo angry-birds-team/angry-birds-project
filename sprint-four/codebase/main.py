@@ -271,6 +271,42 @@ def toggle_playback():
         playback_button.config(image=pause_image)
         read_capture()
 
+def show_timestamp_details(event):
+    index = arrivals_departures_text.index("@%s,%s" % (event.x, event.y))
+    timestamp = arrivals_departures_text.get(index + " linestart", index + " lineend")
+    start_time, end_time = map(lambda t: sum(int(x) * 60 ** i for i, x in enumerate(reversed(t.split(":")))), timestamp.split(" - "))
+    
+    cap = cv2.VideoCapture(input_video_path)
+    cap.set(cv2.CAP_PROP_POS_MSEC, start_time * 1000)
+    
+    new_window = Toplevel(root)
+    new_window.title("Video with Timestamps")
+    
+    video_label = Label(new_window)
+    video_label.pack()
+    
+    def update_frame():
+        nonlocal cap, video_label
+        ret, frame = cap.read()
+        if ret and cap.get(cv2.CAP_PROP_POS_MSEC) <= end_time * 1000:
+            
+            resized_frame = cv2.resize(frame, (320, 240))
+            
+            cv2.putText(resized_frame, timestamp, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            
+            frame_rgb = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(frame_rgb)
+            imgtk = ImageTk.PhotoImage(image=img)
+            video_label.imgtk = imgtk
+            video_label.configure(image=imgtk)
+            video_label.update()
+            
+            video_label.after(30, update_frame)
+        else:
+            cap.release()
+    
+    update_frame()
+
 def read_capture():
     global playing
     global cap
@@ -313,10 +349,14 @@ def read_capture():
         time_position = f"{minutes_raw:02}:{seconds_raw:02}"
         time_position_label.config(text=f"Timestamp: {time_position}")
 
+        arrivals_departures_text.tag_configure("clickable", foreground="blue", underline=1)
+        arrivals_departures_text.tag_bind("clickable", "<Button-1>", show_timestamp_details)
+
         # Update the timestamp label under "Arrivals & Departures"
         timestamps = "\n".join([f"{first_sheet.cell(row=i, column=1).value} - {first_sheet.cell(row=i, column=2).value}" for i in range(1, first_sheet.max_row+1)])
         arrivals_departures_text.delete(1.0, END)  # Clear the text widget
         arrivals_departures_text.insert(END, timestamps)
+        arrivals_departures_text.tag_add("clickable", "1.0", "end")
 
         # Check if end of video is reached
         if cap.get(cv2.CAP_PROP_POS_FRAMES) < cap.get(cv2.CAP_PROP_FRAME_COUNT):
