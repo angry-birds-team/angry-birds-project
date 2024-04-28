@@ -23,7 +23,7 @@ print(path)
 # remember, normal current cwd is angry-birds-project
 codebase_path = "sprint-four/codebase/"
 models_path = "sprint-four/models/"
-input_path = "sprint-four/models/"
+input_path = "sprint-four/input/"
 output_path = "sprint-four/output/"
 
 
@@ -86,11 +86,15 @@ def open_files(): #function to a set of files
     global input_video_paths
     global cap
     global frame_number
-    global first_sheet
+    global sheet
 
     # open system dialog to open video files
-    paths_tuple = filedialog.askopenfilenames(title="Select Video Files", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")))
+    paths_tuple = filedialog.askopenfilenames(title="Select Video Files", filetypes=(("MP4 files", "*.mp4"), ("All files", "*.*")), initialdir=f"{path}/{input_path}")
 
+    # if the user doesn't select a file, abort
+    if paths_tuple is None or len(paths_tuple)==0:
+        return
+    
     input_video_paths.extend(paths_tuple)
     input_video_paths.reverse()
 
@@ -99,7 +103,7 @@ def open_files(): #function to a set of files
         cap.release()
     cap = cv2.VideoCapture(input_video_paths[-1])
     video_selected = os.path.basename(input_video_paths[-1])
-    video_label.config(text=f"Video Selected:\n\n {video_selected}", font=("Terminal", 20))
+    video_label.config(text=f"Current Video Selected:\n\n {video_selected}", font=("Terminal", 20))
     success, preview_image = cap.read()
     if success:
         # Convert image from one color space to other
@@ -129,9 +133,9 @@ def open_files(): #function to a set of files
     cap = cv2.VideoCapture(first_video)
 
     # create first sheet for first video
-    first_sheet = global_workbook.active
-    first_sheet.append(["Timesheet for:", f"{os.path.basename(first_video)}"])
-    first_sheet.append(["Start Time (min:sec)", "End Time (min:sec)"])
+    sheet = global_workbook.active
+    sheet.append(["Timesheet for:", f"{os.path.basename(first_video)}"])
+    sheet.append(["Start Time (min:sec)", "End Time (min:sec)"])
 
 
 def detect_bird(frame): #function for detecting the bird in a frame
@@ -197,7 +201,7 @@ def thresholding(checked_frame):    # function for thresholding based on confide
                     seconds_end = int(timestamp_end % 60)
                     timestamp_start_string = f"{minutes_start:02}:{seconds_start:02}"
                     timestamp_end_string = f"{minutes_end:02}:{seconds_end:02}"
-                    first_sheet.append([timestamp_start_string, timestamp_end_string])
+                    sheet.append([timestamp_start_string, timestamp_end_string])
                     timestamp_start = None
                     delay_started = False
     #Testing delay
@@ -248,9 +252,33 @@ def set_model():    # function for setting model toggle when radio button is cli
     interpreter = tf.lite.Interpreter(model_path=input_model_path)
     interpreter.allocate_tensors()
 
-def set_frame_skip_interval():
-    # Write function later. Function should open up window to set frame skip interval
-    pass
+def set_frame_skip_interval(): # update frame skip 
+
+    def update_frame_skip(event):
+        global frame_divisor
+        frame_divisor = selected_frame_skip.get()
+        f = open('sprint-four/codebase/config.json', 'r+')
+        settings = json.load(f)
+        settings["frame_divisor"] = str(frame_divisor)
+        f.seek(0)
+        f.truncate()
+        json.dump(settings, f)
+
+    #frame_skip_input = ""
+    selected_frame_skip = IntVar()
+    selected_frame_skip.set(frame_divisor)
+
+    frame_skip_window = Toplevel(root)
+    frame_skip_window.geometry("300x100+200+0")
+    frame_skip_window.title("Select Frame Divisor")
+    frame_skip_label = tk.Label(frame_skip_window, text="Program will skip every frame not divisible by:")
+    frame_skip_label.pack(side=TOP)
+    #frame_skip_entry = tk.Entry(frame_skip_window, textvariable=frame_skip_input)
+    #frame_skip_entry.pack(side=TOP)
+    frame_skip_select = ttk.Combobox(frame_skip_window, values=list(range(1,101)), state="readonly", textvariable=selected_frame_skip)
+    frame_skip_select.pack(side=TOP)
+    frame_skip_select.bind("<<ComboboxSelected>>", update_frame_skip)
+
 
 def set_output_destination():
     # Write function later. Function should open up window to set output directory for video & spreadsheet
@@ -314,12 +342,12 @@ def read_capture():
         time_position_label.config(text=f"Timestamp: {time_position}")
 
         # Update the timestamp label under "Arrivals & Departures"
-        timestamps = "\n".join([f"{first_sheet.cell(row=i, column=1).value} - {first_sheet.cell(row=i, column=2).value}" for i in range(1, first_sheet.max_row+1)])
+        timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(1, sheet.max_row+1)])
         arrivals_departures_text.delete(1.0, END)  # Clear the text widget
         arrivals_departures_text.insert(END, timestamps)
 
         # Check if end of video is reached
-        if cap.get(cv2.CAP_PROP_POS_FRAMES) < cap.get(cv2.CAP_PROP_FRAME_COUNT):
+        if cap.get(cv2.CAP_PROP_POS_FRAMES) < cap.get(cv2.CAP_PROP_FRAME_COUNT): # if not, keeping going
             if playing:
                 image_widget.after(1, read_capture)
         else: # if it has been, load next video
@@ -331,7 +359,9 @@ def read_capture():
                 save_workbook()
             else: # if another video is left, update the video label gui element and open the capture to that new video
                 video_selected = os.path.basename(input_video_paths[-1])
-                video_label.config(text=f"Video Selected:\n\n {video_selected}", font=("Terminal", 20))
+                sheet.append(["Timesheet for:", f"{os.path.basename(video_selected)}"])
+                sheet.append(["Start Time (min:sec)", "End Time (min:sec)"])
+                video_label.config(text=f"Current Video Selected:\n\n {video_selected}", font=("Terminal", 20))
                 cap.open(input_video_paths.pop())
             if playing:
                 image_widget.after(1, read_capture)
@@ -343,7 +373,10 @@ def save_workbook():
         # Extract the base name of the video file
         video_base_name = os.path.splitext(os.path.basename(input_video_path))[0]
         # Save the workbook with the video's base name as the file name
-        global_workbook.save(f"{output_path}/timestamps.xlsx")
+        #save_workbook_location = filedialog.asksaveasfilename(title="Save File As", filetypes=(("Excel File", "*.xlsx"), ("All files", "*.*")))
+        save_workbook_location = filedialog.asksaveasfilename(title="Save Workbook As...", filetypes=(("Excel File", "*.xlsx"), ("All files", "*.*")), defaultextension=".xlsx", initialdir=f"{path}/{output_path}")
+        #global_workbook.save(f"{output_path}/timestamps.xlsx")
+        global_workbook.save(save_workbook_location)
         print("Workbook saved successfully")
     except Exception as e:
         print(f"Failed to save workbook: {e}")
@@ -361,6 +394,12 @@ if __name__ == "__main__":
     pause_image = Image.open("sprint-four/codebase/assets/pause.png")
     pause_image = pause_image.resize((25, 25))
     pause_image = ImageTk.PhotoImage(pause_image)
+    icon_image = Image.open("sprint-four/codebase/assets/icon.png")
+    icon_image = icon_image.resize((25,25))
+    icon_image = ImageTk.PhotoImage(icon_image)
+
+    #set icon for root
+    root.iconphoto(False, icon_image)
 
     # Set up left frame for video playback.
     left_frame = ttk.Frame(root, padding="3 3 12 12", width=500, height=800)
@@ -389,7 +428,7 @@ if __name__ == "__main__":
     model_label = ttk.Label(left_frame, text=f"Model Selected:\n\n {model_selected.capitalize()}", font=("Terminal", 20))
     model_label.pack(side=TOP, anchor=W, padx=10, pady=10)
     # Create a label to display the currently selected video file
-    video_label = ttk.Label(left_frame, text=f"Video Selected:\n\n None", font=("Terminal", 20))
+    video_label = ttk.Label(left_frame, text=f"Current Video Selected:\n\n None", font=("Terminal", 20))
     video_label.pack(side=TOP, anchor=W, padx=10, pady=10)
     # test button
     # test_button = ttk.Button(left_frame, text="TEST", command=read_capture,) # logic not implemented
@@ -428,15 +467,23 @@ if __name__ == "__main__":
     # Create Menu
     menu = tk.Menu(root)
 
-    # Create File Menu
-    file_menu = tk.Menu(menu, tearoff=False)
-    file_menu.add_command(label="Open File", command=open_files)
-    recent_menu = tk.Menu(file_menu, tearoff=False)
-    file_menu.add_cascade(label="Open Recent", menu=recent_menu) # (Logic for this command is not implemented yet.)
-    recent_menu.add_command(label="Example Recent File") # placeholder for visual test
-    menu.add_cascade(label="File", menu=file_menu)
+    # Create Open File Menu Command (code for full file menu commented out incase it needs to be re-implemented)
+    #file_menu = tk.Menu(menu, tearoff=False)
+    menu.add_command(label="Open File", command=open_files)
+    #menu.add_cascade(label="File", menu=file_menu)
 
-    # Create Settings Menu
+    # Create Model Menu
+    model_menu = tk.Menu(menu, tearoff=False)
+    model_selection = IntVar(value=model_int)
+    model_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model, value=1)
+    model_menu.add_radiobutton(label="Warbler",variable=model_selection, command=set_model, value=2)
+    menu.add_cascade(label="Model", menu=model_menu)
+
+    # Create Set Frame Skip Command
+    menu.add_command(label="Set Frame Divisor", command=set_frame_skip_interval)
+
+
+    '''# Create Settings Menu
     settings_menu = tk.Menu(menu, tearoff=False)
     model_selection = IntVar(value=model_int)
     settings_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model,value=1)
@@ -449,7 +496,8 @@ if __name__ == "__main__":
     settings_menu.add_checkbutton(label="Frame Skip") # Logic not implemented
     settings_menu.add_checkbutton(label="Output Video File") # Logic not implemented
     settings_menu.add_checkbutton(label="Output Timestamp Spreadsheet") # Logic not implemented
-    menu.add_cascade(label="Settings", menu=settings_menu)
+    menu.add_cascade(label="Settings", menu=settings_menu)'''
+
     # Add menu to root window
     root.config(menu=menu)
 
