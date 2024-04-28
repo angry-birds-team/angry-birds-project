@@ -257,7 +257,12 @@ def set_frame_skip_interval(): # update frame skip
     def update_frame_skip(event):
         global frame_divisor
         frame_divisor = selected_frame_skip.get()
-        print(frame_divisor)
+        f = open('sprint-four/codebase/config.json', 'r+')
+        settings = json.load(f)
+        settings["frame_divisor"] = str(frame_divisor)
+        f.seek(0)
+        f.truncate()
+        json.dump(settings, f)
 
     #frame_skip_input = ""
     selected_frame_skip = IntVar()
@@ -475,7 +480,7 @@ if __name__ == "__main__":
     menu.add_cascade(label="Model", menu=model_menu)
 
     # Create Set Frame Skip Command
-    menu.add_command(label="Set Frame Skip", command=set_frame_skip_interval)
+    menu.add_command(label="Set Frame Divisor", command=set_frame_skip_interval)
 
 
     '''# Create Settings Menu
