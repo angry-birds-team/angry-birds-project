@@ -276,17 +276,44 @@ def show_timestamp_details(event):
     global video_selected
 
     index = arrivals_departures_text.index("@%s,%s" % (event.x, event.y))
-    #print(index)
+    print(index)
     timestamp = arrivals_departures_text.get(index + " linestart", index + " lineend")
     start_time, end_time = map(lambda t: sum(int(x) * 60 ** i for i, x in enumerate(reversed(t.split(":")))), timestamp.split(" - "))
+
+    # Get the total number of lines in the text widget
+    total_lines = int(arrivals_departures_text.index('end-1c').split('.')[0])
+
+    #print(check)
+
+    video_names_dict = {}
+    current_video = ""
+
+    # Iterate through each line in the text widget
+    for i in range(1, total_lines + 1):
+        line_content = arrivals_departures_text.get(f"{i}.0", f"{i}.end").strip()  # Get the content of the line
+        if "Timesheet for:" in line_content:
+            sliced_line_content = line_content[17:]
+            sliced_with_path = f"{input_path}{sliced_line_content}"
+            video_names_dict[i] = {sliced_with_path}
+    
+    index_integer = int(float(index))
+    #print(index_integer)
+
+    for x in video_names_dict:
+        if x < index_integer:
+            video_set = video_names_dict[x]
+            current_video = video_set.pop()
+            #print(current_video)
+            #print(type(current_video))
+
 
     #print(start_time)
     #print(end_time)
     
-    print(f"!!\n{video_selected}\n!!")
-    print(f"!!\n{input_video_path}\n!!")
+    #print(f"!!\n{video_selected}\n!!")
+    #print(f"!!\n{input_video_path}\n!!")
 
-    timestamp_cap = cv2.VideoCapture(input_video_path)
+    timestamp_cap = cv2.VideoCapture(current_video)
     timestamp_cap.set(cv2.CAP_PROP_POS_MSEC, start_time * 1000)
     
     new_window = Toplevel(root)
@@ -300,8 +327,8 @@ def show_timestamp_details(event):
     def update_frame():
         video_label
         ret, frame = timestamp_cap.read()
-        print(timestamp_cap.get(cv2.CAP_PROP_POS_MSEC))
-        print(end_time)
+        #print(timestamp_cap.get(cv2.CAP_PROP_POS_MSEC))
+        #print(end_time)
         if ret and timestamp_cap.get(cv2.CAP_PROP_POS_MSEC) <= end_time * 1000:
             
             resized_frame = cv2.resize(frame, (320, 240))
@@ -373,7 +400,6 @@ def read_capture():
         # Get the total number of lines in the text widget
         total_lines = int(arrivals_departures_text.index('end-1c').split('.')[0])
 
-        check = arrivals_departures_text.get(f"{2}.0", f"{2}.end").strip()  # Get the content of the line to check
         #print(check)
 
         # Iterate through each line in the text widget
