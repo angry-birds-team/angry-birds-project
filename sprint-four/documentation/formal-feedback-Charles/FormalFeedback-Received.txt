@@ -1,3 +1,6 @@
 Feedback from Tamia Boston: 
 
-The current GUI is amazing and a great upgrade compared to the previous one. The addition of the newest features, such as being able to select a model for the program from the options at the top, makes the application a lot more cohesive and allows for easy maneuvering for users. You were also great in your coding conventions, having an explanation for each section of code when needed and utilizing great names for variables and such. Amazing job!
+The current GUI is amazing and a great upgrade compared to the previous one. 
+The addition of the newest features, such as being able to select a model for the program from the options at the top, makes the application a lot more cohesive and allows for easy maneuvering for users. 
+You were also great in your coding conventions, having an explanation for each section of code when needed and utilizing great names for variables and such. 
+Amazing job!
