@@ -345,7 +345,26 @@ def show_timestamp_details(event):
             video_label.after(1, update_frame)
         else:
             timestamp_cap.release()
-    update_frame()
+    def single_second_timestamp(): # special function for if timestamp is within a second, just show a frame from that second
+        video_label
+        ret, frame = timestamp_cap.read()
+        resized_frame = cv2.resize(frame, (320, 240))
+        
+        cv2.putText(resized_frame, timestamp, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        
+        frame_rgb = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(frame_rgb)
+        imgtk = ImageTk.PhotoImage(image=img)
+        video_label.imgtk = imgtk
+        video_label.configure(image=imgtk)
+        video_label.update()
+        timestamp_cap.release()
+    print(start_time)
+    print(end_time)
+    if start_time != end_time:
+        update_frame()
+    else:
+        single_second_timestamp()
 
 def read_capture():
     global playing
