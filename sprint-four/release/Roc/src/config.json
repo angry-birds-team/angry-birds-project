@@ -1,1 +1,0 @@
-{"input_video_path": "", "input_model_path": "", "wren_model_path": "config/models/wren/wren_1/detect.tflite", "warbler_model_path": "config/models/wren/wren_1/detect.tflite", "output_video_path": "output/video/output_video.avi", "output_timestamps_path": "output/timestamps/detection_results.xlsx", "frame_divisor": "1", "confidence_threshold": ".5", "model_selected": "wren"}
