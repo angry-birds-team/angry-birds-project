@@ -66,6 +66,7 @@ cap = None
 confidence_percentage = 0
 timestamp_start = None
 time_position = ""
+formatting_lines = ["Start Time (min:sec) - End Time (min:sec)"]
 
 # initialize variables for delay to avoid duplicate timestamps
 # don't set to above zero, this code isn't working yet
@@ -204,29 +205,6 @@ def thresholding(checked_frame):    # function for thresholding based on confide
                     sheet.append([timestamp_start_string, timestamp_end_string])
                     timestamp_start = None
                     delay_started = False
-    #Testing delay
-    #if delay_started:
-        #print(f"Waiting for {delay_duration} seconds before recording timestamp...")
-
-'''def process_next_video():
-    global input_video_paths
-    global cap
-    global current_video_index
-
-    if current_video_index < len(input_video_paths):
-        input_video_path = input_video_paths[current_video_index]
-        cap = cv2.VideoCapture(input_video_path)
-        current_video_index += 1
-    else:
-        # All videos processed, do cleanup or display message
-        print("All videos processed")
-        # clear video queue
-        input_video_paths = []
-        # stop playing
-        playback_button.invoke()
-        return
-    # Start processing the video
-    read_capture()'''
 
 def set_model():    # function for setting model toggle when radio button is clicked
     global model_selected
@@ -263,8 +241,6 @@ def set_frame_skip_interval(): # update frame skip
         f.seek(0)
         f.truncate()
         json.dump(settings, f)
-
-    #frame_skip_input = ""
     selected_frame_skip = IntVar()
     selected_frame_skip.set(frame_divisor)
 
@@ -273,8 +249,6 @@ def set_frame_skip_interval(): # update frame skip
     frame_skip_window.title("Select Frame Divisor")
     frame_skip_label = tk.Label(frame_skip_window, text="Program will skip every frame not divisible by:")
     frame_skip_label.pack(side=TOP)
-    #frame_skip_entry = tk.Entry(frame_skip_window, textvariable=frame_skip_input)
-    #frame_skip_entry.pack(side=TOP)
     frame_skip_select = ttk.Combobox(frame_skip_window, values=list(range(1,101)), state="readonly", textvariable=selected_frame_skip)
     frame_skip_select.pack(side=TOP)
     frame_skip_select.bind("<<ComboboxSelected>>", update_frame_skip)
@@ -287,7 +261,6 @@ def set_output_destination():
 def toggle_playback():
     global playing
     global cap
-
     #if cap is None:
     #    print("No video selected. Select a video first.")
     #else:
@@ -300,24 +273,36 @@ def toggle_playback():
         read_capture()
 
 def show_timestamp_details(event):
+    global video_selected
+
     index = arrivals_departures_text.index("@%s,%s" % (event.x, event.y))
-    print(index)
+    #print(index)
     timestamp = arrivals_departures_text.get(index + " linestart", index + " lineend")
     start_time, end_time = map(lambda t: sum(int(x) * 60 ** i for i, x in enumerate(reversed(t.split(":")))), timestamp.split(" - "))
+
+    #print(start_time)
+    #print(end_time)
     
-    cap = cv2.VideoCapture(input_video_path)
-    cap.set(cv2.CAP_PROP_POS_MSEC, start_time * 1000)
+    print(f"!!\n{video_selected}\n!!")
+    print(f"!!\n{input_video_path}\n!!")
+
+    timestamp_cap = cv2.VideoCapture(input_video_path)
+    timestamp_cap.set(cv2.CAP_PROP_POS_MSEC, start_time * 1000)
     
     new_window = Toplevel(root)
     new_window.title("Video with Timestamps")
     
     video_label = Label(new_window)
     video_label.pack()
+
+    #timestamp_frame_number = 0 
     
     def update_frame():
-        nonlocal cap, video_label
-        ret, frame = cap.read()
-        if ret and cap.get(cv2.CAP_PROP_POS_MSEC) <= end_time * 1000:
+        video_label
+        ret, frame = timestamp_cap.read()
+        print(timestamp_cap.get(cv2.CAP_PROP_POS_MSEC))
+        print(end_time)
+        if ret and timestamp_cap.get(cv2.CAP_PROP_POS_MSEC) <= end_time * 1000:
             
             resized_frame = cv2.resize(frame, (320, 240))
             
@@ -330,10 +315,9 @@ def show_timestamp_details(event):
             video_label.configure(image=imgtk)
             video_label.update()
             
-            video_label.after(30, update_frame)
+            video_label.after(1, update_frame)
         else:
-            cap.release()
-    
+            timestamp_cap.release()
     update_frame()
 
 def read_capture():
@@ -378,14 +362,34 @@ def read_capture():
         time_position = f"{minutes_raw:02}:{seconds_raw:02}"
         time_position_label.config(text=f"Timestamp: {time_position}")
 
-        arrivals_departures_text.tag_configure("clickable", foreground="blue", underline=1)
-        arrivals_departures_text.tag_bind("clickable", "<Button-1>", show_timestamp_details)
-
         # Update the timestamp label under "Arrivals & Departures"
         timestamps = "\n".join([f"{sheet.cell(row=i, column=1).value} - {sheet.cell(row=i, column=2).value}" for i in range(1, sheet.max_row+1)])
         arrivals_departures_text.delete(1.0, END)  # Clear the text widget
         arrivals_departures_text.insert(END, timestamps)
-        arrivals_departures_text.tag_add("clickable", "1.0", "end")
+        #arrivals_departures_text.tag_add("clickable", "1.0", "end")
+
+        # Assuming `formatting_lines` is a list containing the content of lines that should be excluded from having the "clickable" tag
+
+        # Get the total number of lines in the text widget
+        total_lines = int(arrivals_departures_text.index('end-1c').split('.')[0])
+
+        check = arrivals_departures_text.get(f"{2}.0", f"{2}.end").strip()  # Get the content of the line to check
+        #print(check)
+
+        # Iterate through each line in the text widget
+        for i in range(1, total_lines + 1):
+            line_content = arrivals_departures_text.get(f"{i}.0", f"{i}.end").strip()  # Get the content of the line
+            #print(line_content)
+            if line_content not in formatting_lines:
+                if not "Timesheet for:" in line_content:
+                    # Apply the "clickable" tag to the line if it does not contain any of the formatting lines
+                    arrivals_departures_text.tag_add("clickable", f"{i}.0", f"{i}.end")
+
+        # Configure the "clickable" tag
+        arrivals_departures_text.tag_configure("clickable", foreground="blue", underline=1)
+
+        # Bind the "<Button-1>" event to the "show_timestamp_details" function for lines tagged as "clickable"
+        arrivals_departures_text.tag_bind("clickable", "<Button-1>", show_timestamp_details)
 
         # Check if end of video is reached
         if cap.get(cv2.CAP_PROP_POS_FRAMES) < cap.get(cv2.CAP_PROP_FRAME_COUNT): # if not, keeping going
@@ -522,22 +526,6 @@ if __name__ == "__main__":
 
     # Create Set Frame Skip Command
     menu.add_command(label="Set Frame Divisor", command=set_frame_skip_interval)
-
-
-    '''# Create Settings Menu
-    settings_menu = tk.Menu(menu, tearoff=False)
-    model_selection = IntVar(value=model_int)
-    settings_menu.add_radiobutton(label="Wren",variable=model_selection, command=set_model,value=1)
-    settings_menu.add_radiobutton(label="Warbler",variable=model_selection, command=set_model,value=2)
-    #settings_menu.add_command(label="Select Model", command=set_model) # (Logic for this command is not implemented yet.)
-    settings_menu.add_separator()
-    settings_menu.add_command(label="Set Frame Skip Interval", command=set_frame_skip_interval) # (Logic for this command is not implemented yet.)
-    settings_menu.add_command(label="Set Output Destination", command=set_output_destination)
-    settings_menu.add_separator()
-    settings_menu.add_checkbutton(label="Frame Skip") # Logic not implemented
-    settings_menu.add_checkbutton(label="Output Video File") # Logic not implemented
-    settings_menu.add_checkbutton(label="Output Timestamp Spreadsheet") # Logic not implemented
-    menu.add_cascade(label="Settings", menu=settings_menu)'''
 
     # Add menu to root window
     root.config(menu=menu)
