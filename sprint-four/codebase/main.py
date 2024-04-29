@@ -301,6 +301,7 @@ def toggle_playback():
 
 def show_timestamp_details(event):
     index = arrivals_departures_text.index("@%s,%s" % (event.x, event.y))
+    print(index)
     timestamp = arrivals_departures_text.get(index + " linestart", index + " lineend")
     start_time, end_time = map(lambda t: sum(int(x) * 60 ** i for i, x in enumerate(reversed(t.split(":")))), timestamp.split(" - "))
     
