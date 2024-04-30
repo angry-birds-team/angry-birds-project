@@ -1,0 +1,7 @@
+Name: Christopher Landaverde
+Reviewer: Karina Pizarro
+The following review is a code review of the main.py file. The file could benefit from error
+handling or exceptions to avoid any potential crashes, but apart from this possible improvement,
+the code is very legible and organized. There are comments throughout the code to help clarify
+what is going on. The variable names are kept simple and easy to identify, and there are an
+appropriate amount of indentations. Global and local variables are used appropriately.
