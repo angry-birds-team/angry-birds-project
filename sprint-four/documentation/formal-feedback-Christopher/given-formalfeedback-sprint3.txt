@@ -1,0 +1,3 @@
+Kelsey Evans
+
+The code looks great. The AI that was implemented seems to work flawlessly as well as the voice over implemented. Pleny of commments and cleary view of what the code does.
