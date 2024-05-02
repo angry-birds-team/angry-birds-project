@@ -1,1 +1,17 @@
-Delete after Putting Data in This Folder.
+Here is a quick summary of all the insights I got from my last meeting with Rin on Tuesday.
+
+In our GUI, Rin would appreciate it it updated anywhere where it says "bird" to wren or warbler instead, so the users can know for sure what model they have loaded at all times.
+
+Rin would like the process of loading a model to be as simple as possible. Basically, what we ended up converging on is setting the models for the wren and warblers in the code or config file and have an option toggle in the toolbar to make it as easier as possible for the user without worrying about the technical details.
+
+It is necessary for the user to be able to select multiple video files and have them scan one after the other. Especially since the internal nest camera videos have up to 6 parts.
+
+It is neccesary for the user to be able to click on a timestamp and pan to that section of the video. My current idea for how to implement this is to have it open a second "Review Mode" window where the timestamp is panned to to avoid messing with the scanning window, but I haven't even started on this, so I'm definitely open to other ideas on this.
+
+We revisited the problem of the way to many timestamps. Rin reiterated that she would prefer false positives, but we also discussed a framework for grouping timestamps into events. (The "super-timestamp" idea I spoke to y'all about).
+
+Rin confirmed that all the video should have the same fps, 60 fps.
+
+If we could pull some info from the titles of the videos that would be nice, but most import is that the user can enter that themself. (So that the output can be properly labeled I think is the idea?) She wrote the usual format of the file titles on a sticky note for me which I will post shortly.
+
+If anyone has any questions about any of this, ask while my memory is fresh lol. If anyone wants to start working on any of these things, I would encourage doing so. 
